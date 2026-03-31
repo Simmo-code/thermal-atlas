@@ -240,17 +240,23 @@ export default function ThermalAtlasPro() {
 
   const loadTile = useCallback((url, key) => {
     if (tileCache.current[key]) return;
+
     const img = new Image();
     img.crossOrigin = "anonymous";
+    img.referrerPolicy = "no-referrer";
+
     img.onload = () => {
       tileCache.current[key] = img;
       setLoadedTiles((p) => ({ ...p, [key]: true }));
     };
-    img.onerror = () => {
+
+    img.onerror = (err) => {
+      console.error("Tile failed:", key, url, err);
       tileCache.current[key] = "error";
     };
-    img.src = url;
+
     tileCache.current[key] = "loading";
+    img.src = url;
   }, []);
 
   const rStats =
