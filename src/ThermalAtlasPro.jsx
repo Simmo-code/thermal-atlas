@@ -318,7 +318,7 @@ export default function ThermalAtlasPro() {
         if (showKK7) {
           const tmsY = Math.pow(2, zoom) - 1 - ty;
           const kk = `kk7_${kk7Layer}_${zoom}_${tx}_${tmsY}`;
-          const ku = `https://thermal.kk7.ch/tiles/${kk7Layer}/${zoom}/${tx}/${tmsY}.png`;
+          const ku = `https://kk7-proxy.simmo-justin.workers.dev/proxy/tiles/${kk7Layer}/${zoom}/${tx}/${tmsY}.png`;
           loadTile(ku, kk);
 
           if (tileCache.current[kk] instanceof Image) {
