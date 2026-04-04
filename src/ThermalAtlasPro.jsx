@@ -170,12 +170,20 @@ function hotspotCellSize(zoom) {
   return 5;
 }
 
+function distanceBetweenTouches(a, b) {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
 // ============================================================
 // COMPONENT
 // ============================================================
 export default function ThermalAtlasPro() {
   const canvasRef = useRef(null);
   const tileCache = useRef({});
+  const activePointers = useRef(new Map());
+  const pinchState = useRef({ startDist: null, startZoom: null });
 
   const [zoom, setZoom] = useState(8);
   const [center, setCenter] = useState(MAP_CENTER);
@@ -198,9 +206,20 @@ export default function ThermalAtlasPro() {
   const [thresholdMode, setThresholdMode] = useState("hot2");
   const [anomalyLoadState, setAnomalyLoadState] = useState("loading");
 
-  const W = 900;
-  const H = 600;
+  const [viewportWidth, setViewportWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 1024
+  );
+
+  const isMobile = viewportWidth < 768;
+  const W = isMobile ? Math.max(320, Math.min(viewportWidth - 16, 900)) : 900;
+  const H = isMobile ? 520 : 600;
   const TS = 256;
+
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}data/anomaly_grid.json`)
@@ -296,7 +315,6 @@ export default function ThermalAtlasPro() {
 
     const bm = BASEMAPS[basemap];
 
-    // Basemap + KK7 tiles
     for (let tx = txs; tx <= txe; tx++) {
       for (let ty = tys; ty <= tye; ty++) {
         const px = tx * TS - ox;
@@ -330,7 +348,6 @@ export default function ThermalAtlasPro() {
       }
     }
 
-    // Anomaly overlay
     if (showAnomaly && anomalyCells.length > 0) {
       const size = hotspotCellSize(zoom);
 
@@ -355,7 +372,6 @@ export default function ThermalAtlasPro() {
       }
     }
 
-    // Route
     if (routePoints.length > 0) {
       const rpx = routePoints.map((rp) =>
         latLonToPixel(rp.lat, rp.lon, zoom, ox, oy)
@@ -415,7 +431,6 @@ export default function ThermalAtlasPro() {
       });
     }
 
-    // Sites
     if (showSites) {
       SITES.forEach((site) => {
         if (!selectedRegions.has(site.region)) return;
@@ -511,6 +526,8 @@ export default function ThermalAtlasPro() {
     showAnomaly,
     thresholdMode,
     loadTile,
+    W,
+    H,
   ]);
 
   // ---- MOUSE ----
@@ -591,6 +608,123 @@ export default function ThermalAtlasPro() {
     });
   };
 
+  // ---- POINTER / TOUCH ----
+  const handlePointerDown = useCallback(
+    (e) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      canvas.setPointerCapture?.(e.pointerId);
+
+      activePointers.current.set(e.pointerId, {
+        x: e.clientX,
+        y: e.clientY,
+      });
+
+      const pts = Array.from(activePointers.current.values());
+
+      if (pts.length === 1 && !routeMode) {
+        setIsDragging(true);
+        setDragStart({
+          x: e.clientX,
+          y: e.clientY,
+          lat: center.lat,
+          lon: center.lon,
+        });
+      }
+
+      if (pts.length === 2) {
+        setIsDragging(false);
+        setDragStart(null);
+        pinchState.current.startDist = distanceBetweenTouches(pts[0], pts[1]);
+        pinchState.current.startZoom = zoom;
+      }
+    },
+    [center.lat, center.lon, routeMode, zoom]
+  );
+
+  const handlePointerMove = useCallback(
+    (e) => {
+      if (!activePointers.current.has(e.pointerId)) return;
+
+      activePointers.current.set(e.pointerId, {
+        x: e.clientX,
+        y: e.clientY,
+      });
+
+      const rect = canvasRef.current.getBoundingClientRect();
+      const mx = (e.clientX - rect.left) * (W / rect.width);
+      const my = (e.clientY - rect.top) * (H / rect.height);
+      const pts = Array.from(activePointers.current.values());
+
+      if (pts.length === 2) {
+        e.preventDefault();
+        const dist = distanceBetweenTouches(pts[0], pts[1]);
+        if (pinchState.current.startDist && pinchState.current.startZoom !== null) {
+          const scaleFactor = dist / pinchState.current.startDist;
+          const zoomDelta = Math.log2(scaleFactor);
+          const nextZoom = Math.max(6, Math.min(13, pinchState.current.startZoom + zoomDelta));
+          setZoom(nextZoom);
+        }
+        return;
+      }
+
+      if (pts.length === 1 && isDragging && dragStart && !routeMode) {
+        e.preventDefault();
+        const dx = e.clientX - dragStart.x;
+        const dy = e.clientY - dragStart.y;
+        const sr = W / rect.width;
+        const ws = Math.pow(2, zoom) * TS;
+
+        setCenter({
+          lat: Math.max(50, Math.min(53, dragStart.lat + ((dy * sr) / ws) * 180)),
+          lon: Math.max(-6, Math.min(2.5, dragStart.lon - ((dx * sr) / ws) * 360)),
+        });
+        return;
+      }
+
+      let found = null;
+      SITES.forEach((si) => {
+        if (!selectedRegions.has(si.region)) return;
+        const p = latLonToPixel(si.lat, si.lon, zoom, ox, oy);
+        if (Math.sqrt((mx - p.x) ** 2 + (my - p.y) ** 2) < 12) found = si.name;
+      });
+      setHoveredSite(found);
+    },
+    [W, H, dragStart, isDragging, ox, oy, routeMode, selectedRegions, zoom]
+  );
+
+  const handlePointerUp = useCallback(
+    (e) => {
+      activePointers.current.delete(e.pointerId);
+      const pts = Array.from(activePointers.current.values());
+
+      if (pts.length < 2) {
+        pinchState.current.startDist = null;
+        pinchState.current.startZoom = null;
+      }
+
+      if (pts.length === 0) {
+        setIsDragging(false);
+        setDragStart(null);
+      }
+    },
+    []
+  );
+
+  const handlePointerCancel = useCallback(
+    (e) => {
+      activePointers.current.delete(e.pointerId);
+      pinchState.current.startDist = null;
+      pinchState.current.startZoom = null;
+      if (activePointers.current.size === 0) {
+        setIsDragging(false);
+        setDragStart(null);
+      }
+    },
+    []
+  );
+
   const toggleRegion = (r) => {
     setSelectedRegions((p) => {
       const n = new Set(p);
@@ -602,33 +736,63 @@ export default function ThermalAtlasPro() {
 
   // ---- RENDER ----
   return (
-    <div style={{ background: "#080e18", color: "#c8d4e0", fontFamily: "'DM Sans','Segoe UI',sans-serif", minHeight: "100vh" }}>
+    <div
+      style={{
+        background: "#080e18",
+        color: "#c8d4e0",
+        fontFamily: "'DM Sans','Segoe UI',sans-serif",
+        minHeight: "100vh",
+      }}
+    >
       <div style={{ maxWidth: 940, margin: "0 auto", padding: "8px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 5,
+            gap: 8,
+          }}
+        >
           <div>
-            <h1 style={{ fontSize: 16, color: "#7cc8ff", margin: 0, letterSpacing: 1.5, fontWeight: 800 }}>
+            <h1
+              style={{
+                fontSize: isMobile ? 18 : 16,
+                color: "#7cc8ff",
+                margin: 0,
+                letterSpacing: 1.5,
+                fontWeight: 800,
+              }}
+            >
               THERMAL ATLAS UK
             </h1>
-            <p style={{ fontSize: 10, opacity: 0.4, margin: 0 }}>
+            <p style={{ fontSize: isMobile ? 11 : 10, opacity: 0.4, margin: 0 }}>
               KK7 thermals + satellite anomaly + terrain + sites — Birmingham to South Coast
             </p>
           </div>
           <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-            <button onClick={() => setZoom((z) => Math.min(z + 1, 13))} style={btnS}>+</button>
-            <span style={{ fontSize: 11, color: "#88aacc", minWidth: 24, textAlign: "center" }}>z{zoom}</span>
-            <button onClick={() => setZoom((z) => Math.max(z - 1, 6))} style={btnS}>−</button>
+            <button onClick={() => setZoom((z) => Math.min(z + 1, 13))} style={btnS(isMobile)}>+</button>
+            <span style={{ fontSize: 11, color: "#88aacc", minWidth: 24, textAlign: "center" }}>z{Math.round(zoom * 10) / 10}</span>
+            <button onClick={() => setZoom((z) => Math.max(z - 1, 6))} style={btnS(isMobile)}>−</button>
           </div>
         </div>
 
-        {/* Basemap + KK7 selectors */}
-        <div style={{ display: "flex", gap: 3, marginBottom: 3, flexWrap: "wrap", alignItems: "center" }}>
-          <span style={lblS}>Base:</span>
+        <div
+          style={{
+            display: "flex",
+            gap: 4,
+            marginBottom: 4,
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
+          <span style={lblS(isMobile)}>Base:</span>
           {Object.entries(BASEMAPS).map(([k, v]) => (
             <button
               key={k}
               onClick={() => setBasemap(k)}
               style={{
-                ...tabS,
+                ...tabS(isMobile),
                 fontWeight: basemap === k ? 700 : 400,
                 background: basemap === k ? "#1a3a5a" : "rgba(255,255,255,0.04)",
                 color: basemap === k ? "#88bbdd" : "#556677",
@@ -640,7 +804,7 @@ export default function ThermalAtlasPro() {
 
           <span style={sepS}>|</span>
 
-          <span style={lblS}>KK7:</span>
+          <span style={lblS(isMobile)}>KK7:</span>
           {Object.entries(KK7_LAYERS).map(([k, v]) => (
             <button
               key={k}
@@ -649,9 +813,9 @@ export default function ThermalAtlasPro() {
                 setShowKK7(true);
               }}
               style={{
-                ...tabS,
-                fontSize: 8,
-                padding: "2px 5px",
+                ...tabS(isMobile),
+                fontSize: isMobile ? 9 : 8,
+                padding: isMobile ? "6px 8px" : "2px 5px",
                 fontWeight: kk7Layer === k && showKK7 ? 700 : 400,
                 background:
                   kk7Layer === k && showKK7 ? "#1a4a7a" : "rgba(255,255,255,0.03)",
@@ -665,7 +829,7 @@ export default function ThermalAtlasPro() {
           <button
             onClick={() => setShowKK7(!showKK7)}
             style={{
-              ...tabS,
+              ...tabS(isMobile),
               background: showKK7 ? "rgba(255,100,50,0.1)" : "rgba(255,255,255,0.03)",
               color: showKK7 ? "#ff8866" : "#556677",
             }}
@@ -674,12 +838,19 @@ export default function ThermalAtlasPro() {
           </button>
         </div>
 
-        {/* Controls */}
-        <div style={{ display: "flex", gap: 5, marginBottom: 4, flexWrap: "wrap", alignItems: "center" }}>
-          <label style={chkS}>
+        <div
+          style={{
+            display: "flex",
+            gap: 5,
+            marginBottom: 4,
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
+          <label style={chkS(isMobile)}>
             <input type="checkbox" checked={showSites} onChange={() => setShowSites(!showSites)} /> Sites
           </label>
-          <label style={chkS}>
+          <label style={chkS(isMobile)}>
             <input type="checkbox" checked={showLabels} onChange={() => setShowLabels(!showLabels)} /> Labels
           </label>
 
@@ -688,7 +859,7 @@ export default function ThermalAtlasPro() {
           <button
             onClick={() => setShowAnomaly(!showAnomaly)}
             style={{
-              ...tabS,
+              ...tabS(isMobile),
               fontWeight: 700,
               background: showAnomaly ? "rgba(255,140,0,0.12)" : "rgba(255,255,255,0.04)",
               color: showAnomaly ? "#ffbb66" : "#667788",
@@ -700,7 +871,7 @@ export default function ThermalAtlasPro() {
           <button
             onClick={() => setThresholdMode("hot2")}
             style={{
-              ...tabS,
+              ...tabS(isMobile),
               fontWeight: thresholdMode === "hot2" ? 700 : 500,
               background: thresholdMode === "hot2" ? "rgba(255,165,0,0.14)" : "rgba(255,255,255,0.04)",
               color: thresholdMode === "hot2" ? "#ffbb55" : "#667788",
@@ -712,7 +883,7 @@ export default function ThermalAtlasPro() {
           <button
             onClick={() => setThresholdMode("hot3")}
             style={{
-              ...tabS,
+              ...tabS(isMobile),
               fontWeight: thresholdMode === "hot3" ? 700 : 500,
               background: thresholdMode === "hot3" ? "rgba(255,60,40,0.14)" : "rgba(255,255,255,0.04)",
               color: thresholdMode === "hot3" ? "#ff7766" : "#667788",
@@ -729,8 +900,8 @@ export default function ThermalAtlasPro() {
               if (routeMode) setRoutePoints([]);
             }}
             style={{
-              ...tabS,
-              padding: "3px 10px",
+              ...tabS(isMobile),
+              padding: isMobile ? "10px 12px" : "3px 10px",
               fontWeight: 700,
               background: routeMode ? "rgba(0,255,200,0.12)" : "rgba(255,255,255,0.04)",
               color: routeMode ? "#00ffcc" : "#667788",
@@ -741,10 +912,10 @@ export default function ThermalAtlasPro() {
 
           {routeMode && routePoints.length > 0 && (
             <>
-              <button onClick={() => setRoutePoints((p) => p.slice(0, -1))} style={{ ...tabS, color: "#ffcc66" }}>
+              <button onClick={() => setRoutePoints((p) => p.slice(0, -1))} style={{ ...tabS(isMobile), color: "#ffcc66" }}>
                 Undo
               </button>
-              <button onClick={() => setRoutePoints([])} style={{ ...tabS, color: "#ff8866" }}>
+              <button onClick={() => setRoutePoints([])} style={{ ...tabS(isMobile), color: "#ff8866" }}>
                 Clear
               </button>
             </>
@@ -757,11 +928,11 @@ export default function ThermalAtlasPro() {
               key={r}
               onClick={() => toggleRegion(r)}
               style={{
-                padding: "1px 4px",
+                padding: isMobile ? "6px 8px" : "1px 4px",
                 borderRadius: 3,
                 border: "none",
                 cursor: "pointer",
-                fontSize: 8,
+                fontSize: isMobile ? 10 : 8,
                 background: selectedRegions.has(r)
                   ? `${REGION_COLORS[r]}33`
                   : "rgba(255,255,255,0.02)",
@@ -774,8 +945,15 @@ export default function ThermalAtlasPro() {
           ))}
         </div>
 
-        {/* Canvas */}
-        <div style={{ borderRadius: 8, overflow: "hidden", border: "1px solid rgba(120,180,255,0.12)" }}>
+        <div
+          style={{
+            borderRadius: 8,
+            overflow: "hidden",
+            border: "1px solid rgba(120,180,255,0.12)",
+            touchAction: "none",
+            overscrollBehavior: "contain",
+          }}
+        >
           <canvas
             ref={canvasRef}
             width={W}
@@ -789,15 +967,24 @@ export default function ThermalAtlasPro() {
               setHoveredSite(null);
             }}
             onWheel={handleWheel}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
+            onPointerLeave={handlePointerUp}
             style={{
               display: "block",
               width: "100%",
+              height: "auto",
+              touchAction: "none",
+              overscrollBehavior: "contain",
+              WebkitUserSelect: "none",
+              userSelect: "none",
               cursor: routeMode ? "crosshair" : isDragging ? "grabbing" : "grab",
             }}
           />
         </div>
 
-        {/* Route info */}
         {routeMode && rStats && (
           <div
             style={{
@@ -835,11 +1022,10 @@ export default function ThermalAtlasPro() {
               color: "#66bbaa",
             }}
           >
-            Click the map to add waypoints. Each leg shows distance and bearing. Undo removes last point.
+            Tap the map to add waypoints. Each leg shows distance and bearing. Undo removes last point.
           </div>
         )}
 
-        {/* Hover info */}
         {hoveredSite && !routeMode && (() => {
           const si = SITES.find((s) => s.name === hoveredSite);
           return si ? (
@@ -869,7 +1055,6 @@ export default function ThermalAtlasPro() {
           ) : null;
         })()}
 
-        {/* Info panels */}
         <div style={{ display: "flex", gap: 5, marginTop: 5, flexWrap: "wrap" }}>
           <div style={pnlS}>
             <div style={pnlT}>KK7 THERMALS</div>
@@ -890,7 +1075,7 @@ export default function ThermalAtlasPro() {
 
           <div style={pnlS}>
             <div style={pnlT}>ANOMALY HOTSPOTS</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3, flexWrap: "wrap" }}>
               <div style={{ width: 12, height: 8, background: "rgba(255,160,30,0.7)", borderRadius: 2 }} />
               <span style={{ fontSize: 8, opacity: 0.65 }}>+2°C candidate</span>
               <div style={{ width: 12, height: 8, background: "rgba(255,30,10,0.8)", borderRadius: 2, marginLeft: 8 }} />
@@ -942,39 +1127,42 @@ export default function ThermalAtlasPro() {
   );
 }
 
-const btnS = {
-  padding: "3px 10px",
+const btnS = (isMobile = false) => ({
+  padding: isMobile ? "10px 14px" : "3px 10px",
+  minWidth: isMobile ? 44 : "auto",
+  minHeight: isMobile ? 44 : "auto",
   borderRadius: 4,
   border: "none",
   cursor: "pointer",
   background: "rgba(255,255,255,0.08)",
   color: "#88aacc",
-  fontSize: 13,
+  fontSize: isMobile ? 16 : 13,
   fontWeight: 700,
-};
+});
 
-const tabS = {
-  padding: "3px 7px",
+const tabS = (isMobile = false) => ({
+  padding: isMobile ? "8px 10px" : "3px 7px",
+  minHeight: isMobile ? 38 : "auto",
   borderRadius: 4,
   border: "none",
   cursor: "pointer",
-  fontSize: 10,
-};
+  fontSize: isMobile ? 11 : 10,
+});
 
-const chkS = {
-  fontSize: 10,
+const chkS = (isMobile = false) => ({
+  fontSize: isMobile ? 12 : 10,
   display: "flex",
   alignItems: "center",
-  gap: 3,
+  gap: 4,
   cursor: "pointer",
   color: "#889aaa",
-};
+});
 
-const lblS = {
-  fontSize: 10,
+const lblS = (isMobile = false) => ({
+  fontSize: isMobile ? 11 : 10,
   color: "#556677",
   marginRight: 2,
-};
+});
 
 const sepS = {
   fontSize: 10,
