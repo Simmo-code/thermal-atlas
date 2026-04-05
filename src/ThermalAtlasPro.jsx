@@ -236,6 +236,32 @@ function exportRouteAsGpx(routePoints) {
   downloadTextFile("thermal-atlas-route.gpx", gpx, "application/gpx+xml;charset=utf-8");
 }
 
+
+function routesEqual(a, b) {
+  return (
+    Math.abs(a.lat - b.lat) < 0.000001 &&
+    Math.abs(a.lon - b.lon) < 0.000001
+  );
+}
+
+function ensureClosedRoute(points) {
+  if (points.length < 3) return points;
+  if (routesEqual(points[0], points[points.length - 1])) return points;
+  return [...points, { ...points[0] }];
+}
+
+function ensureOpenRoute(points) {
+  if (points.length < 2) return points;
+  if (routesEqual(points[0], points[points.length - 1])) return points.slice(0, -1);
+  return points;
+}
+
+function reverseRoutePoints(points) {
+  if (points.length < 2) return points;
+  const open = ensureOpenRoute(points);
+  return [...open].reverse();
+}
+
 // ============================================================
 // COMPONENT
 // ============================================================
@@ -390,6 +416,12 @@ export default function ThermalAtlasPro() {
         })()
       : null;
 
+  const routeClosed =
+    routePoints.length >= 2 &&
+    routesEqual(routePoints[0], routePoints[routePoints.length - 1]);
+
+  const openRoutePoints = routeClosed ? routePoints.slice(0, -1) : routePoints;
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -517,15 +549,29 @@ export default function ThermalAtlasPro() {
       }
 
       rpx.forEach((p, i) => {
+        const isStart = i === 0;
+        const isLast = i === rpx.length - 1;
+        const isClosedFinish = routeClosed && isLast;
+        const radius = isMobile ? 8 : 6;
+
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
-        ctx.fillStyle =
-          i === 0 ? "#00ff88" : i === rpx.length - 1 ? "#ff8844" : "#00ccff";
+        ctx.arc(p.x, p.y, radius + 4, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0,0,0,0.28)";
         ctx.fill();
-        ctx.strokeStyle = "#000";
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle =
+          isStart ? "#00ff88" :
+          isClosedFinish ? "#ffd166" :
+          isLast ? "#ff8844" :
+          "#00ccff";
+        ctx.fill();
+        ctx.strokeStyle = "#001018";
         ctx.lineWidth = 2;
         ctx.stroke();
-        ctx.font = "bold 8px sans-serif";
+
+        ctx.font = isMobile ? "bold 10px sans-serif" : "bold 8px sans-serif";
         ctx.fillStyle = "#fff";
         ctx.textAlign = "center";
         ctx.fillText(`${i + 1}`, p.x, p.y + 3);
@@ -1083,7 +1129,7 @@ export default function ThermalAtlasPro() {
               color: routeMode ? "#00ffcc" : "#667788",
             }}
           >
-            {routeMode ? "✓ Route Mode" : "Route Planner"}
+            {routeMode ? "✓ Planner On" : "Route Planner"}
           </button>
 
           {routeMode && routePoints.length > 0 && (
@@ -1094,10 +1140,19 @@ export default function ThermalAtlasPro() {
               <button onClick={() => setRoutePoints([])} style={{ ...tabS(isMobile), color: "#ff8866" }}>
                 Clear
               </button>
-              <button onClick={() => exportRouteAsCup(routePoints)} style={{ ...tabS(isMobile), color: "#9ee37d" }}>
+              <button onClick={() => setRoutePoints((p) => reverseRoutePoints(p))} style={{ ...tabS(isMobile), color: "#c6b6ff" }}>
+                Reverse
+              </button>
+              <button
+                onClick={() => setRoutePoints((p) => (routeClosed ? ensureOpenRoute(p) : ensureClosedRoute(p)))}
+                style={{ ...tabS(isMobile), color: routeClosed ? "#8cc8ff" : "#9ee37d" }}
+              >
+                {routeClosed ? "Open Task" : "Close Task"}
+              </button>
+              <button onClick={() => exportRouteAsCup(openRoutePoints)} style={{ ...tabS(isMobile), color: "#9ee37d" }}>
                 Export CUP
               </button>
-              <button onClick={() => exportRouteAsGpx(routePoints)} style={{ ...tabS(isMobile), color: "#8cc8ff" }}>
+              <button onClick={() => exportRouteAsGpx(openRoutePoints)} style={{ ...tabS(isMobile), color: "#8cc8ff" }}>
                 Export GPX
               </button>
             </>
@@ -1167,29 +1222,68 @@ export default function ThermalAtlasPro() {
           />
         </div>
 
-        {routeMode && rStats && (
+        {routeMode && (
           <div
             style={{
-              marginTop: 4,
-              padding: "6px 10px",
-              background: "rgba(0,255,200,0.06)",
-              borderRadius: 6,
-              border: "1px solid rgba(0,255,200,0.1)",
+              marginTop: 6,
+              padding: isMobile ? "10px" : "8px 10px",
+              background: "rgba(8,16,28,0.92)",
+              borderRadius: 8,
+              border: "1px solid rgba(0,255,200,0.14)",
               fontSize: 11,
-              display: "flex",
-              gap: 14,
-              flexWrap: "wrap",
-              alignItems: "center",
             }}
           >
-            <span style={{ fontWeight: 700, color: "#00ffcc" }}>Route</span>
-            <span>Total: <b>{rStats.total.toFixed(1)} km</b></span>
-            <span>Legs: <b>{rStats.legs.length}</b></span>
-            {rStats.legs.map((l, i) => (
-              <span key={i} style={{ fontSize: 9, opacity: 0.6 }}>
-                #{i + 1}: {l.dist.toFixed(1)}km @ {l.brg.toFixed(0)}°
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
+              <span style={{ fontWeight: 800, color: "#00ffcc", letterSpacing: 0.4 }}>
+                XC PLANNER
               </span>
-            ))}
+              <span style={{ opacity: 0.72 }}>
+                Points: <b>{openRoutePoints.length}</b>
+              </span>
+              <span style={{ opacity: 0.72 }}>
+                Legs: <b>{rStats ? rStats.legs.length : 0}</b>
+              </span>
+              <span style={{ opacity: 0.72 }}>
+                Distance: <b>{rStats ? rStats.total.toFixed(1) : "0.0"} km</b>
+              </span>
+              <span style={{ opacity: 0.72 }}>
+                Task: <b>{routeClosed ? "Closed" : "Open"}</b>
+              </span>
+            </div>
+
+            {rStats && rStats.legs.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  gap: 6,
+                  flexWrap: "wrap",
+                  marginTop: 8,
+                }}
+              >
+                {rStats.legs.map((l, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      padding: "4px 8px",
+                      borderRadius: 999,
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      fontSize: 10,
+                      opacity: 0.8,
+                    }}
+                  >
+                    L{i + 1} {l.dist.toFixed(1)}km · {l.brg.toFixed(0)}°
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -1204,7 +1298,7 @@ export default function ThermalAtlasPro() {
               color: "#66bbaa",
             }}
           >
-            Tap to add waypoints. Drag an existing numbered point to move it. Undo removes the last point. Export CUP for XCTrack waypoint import, or GPX for general route use.
+            Tap to add turnpoints. Drag any numbered point to move it. Use Close Task for a loop, Reverse to flip direction, and Export CUP to import waypoints into XCTrack.
           </div>
         )}
 
