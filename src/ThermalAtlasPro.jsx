@@ -178,6 +178,64 @@ function distanceBetweenTouches(a, b) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
+
+function routePointHitIndex(routePoints, mx, my, zoom, ox, oy, radius = 12) {
+  for (let i = routePoints.length - 1; i >= 0; i--) {
+    const p = latLonToPixel(routePoints[i].lat, routePoints[i].lon, zoom, ox, oy);
+    const dx = mx - p.x;
+    const dy = my - p.y;
+    if (Math.sqrt(dx * dx + dy * dy) <= radius) return i;
+  }
+  return -1;
+}
+
+function downloadTextFile(filename, content, mime = "text/plain;charset=utf-8") {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function toCupCoord(value, isLat) {
+  const hemi = isLat ? (value >= 0 ? "N" : "S") : (value >= 0 ? "E" : "W");
+  const abs = Math.abs(value);
+  const deg = Math.floor(abs);
+  const min = (abs - deg) * 60;
+  const degWidth = isLat ? 2 : 3;
+  return `${String(deg).padStart(degWidth, "0")}${min.toFixed(3).padStart(6, "0")}${hemi}`;
+}
+
+function exportRouteAsCup(routePoints) {
+  if (!routePoints.length) return;
+  const lines = [
+    'name,code,country,lat,lon,elev,style,rwdir,rwlen,freq,desc',
+    ...routePoints.map((p, i) =>
+      `"TP${i + 1}","TP${i + 1}","UK",${toCupCoord(p.lat, true)},${toCupCoord(p.lon, false)},"0m",1,,,,`
+    ),
+  ];
+  downloadTextFile("thermal-atlas-route.cup", lines.join("\n"), "text/plain;charset=utf-8");
+}
+
+function exportRouteAsGpx(routePoints) {
+  if (!routePoints.length) return;
+  const pts = routePoints.map((p, i) => `
+    <rtept lat="${p.lat.toFixed(6)}" lon="${p.lon.toFixed(6)}">
+      <name>TP${i + 1}</name>
+    </rtept>`).join("");
+  const gpx = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Thermal Atlas UK" xmlns="http://www.topografix.com/GPX/1/1">
+  <rte>
+    <name>Thermal Atlas Route</name>${pts}
+  </rte>
+</gpx>`;
+  downloadTextFile("thermal-atlas-route.gpx", gpx, "application/gpx+xml;charset=utf-8");
+}
+
 // ============================================================
 // COMPONENT
 // ============================================================
@@ -190,6 +248,8 @@ export default function ThermalAtlasPro() {
     startZoom: null,
     lastStepZoom: null,
   });
+  const routeDragIndexRef = useRef(null);
+  const routeDragMovedRef = useRef(false);
 
   const [zoom, setZoom] = useState(8);
   const [center, setCenter] = useState(MAP_CENTER);
@@ -575,21 +635,41 @@ export default function ThermalAtlasPro() {
   ]);
 
   const handleMouseDown = (e) => {
-    if (!routeMode) {
-      setIsDragging(true);
-      setDragStart({
-        x: e.clientX,
-        y: e.clientY,
-        lat: center.lat,
-        lon: center.lon,
-      });
+    const rect = canvasRef.current.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (W / rect.width);
+    const my = (e.clientY - rect.top) * (H / rect.height);
+
+    if (routeMode) {
+      const idx = routePointHitIndex(routePoints, mx, my, zoomInt, ox, oy, isMobile ? 18 : 12);
+      if (idx >= 0) {
+        routeDragIndexRef.current = idx;
+        routeDragMovedRef.current = false;
+      }
+      return;
     }
+
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX,
+      y: e.clientY,
+      lat: center.lat,
+      lon: center.lon,
+    });
   };
 
   const handleMouseMove = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
     const mx = (e.clientX - rect.left) * (W / rect.width);
     const my = (e.clientY - rect.top) * (H / rect.height);
+
+    if (routeMode && routeDragIndexRef.current !== null) {
+      const ll = pixelToLatLon(mx, my, zoomInt, ox, oy);
+      routeDragMovedRef.current = true;
+      setRoutePoints((prev) =>
+        prev.map((p, i) => (i === routeDragIndexRef.current ? ll : p))
+      );
+      return;
+    }
 
     if (isDragging && dragStart && !routeMode) {
       const dx = e.clientX - dragStart.x;
@@ -614,6 +694,7 @@ export default function ThermalAtlasPro() {
   };
 
   const handleMouseUp = () => {
+    routeDragIndexRef.current = null;
     setIsDragging(false);
     setDragStart(null);
   };
@@ -624,6 +705,14 @@ export default function ThermalAtlasPro() {
     const my = (e.clientY - rect.top) * (H / rect.height);
 
     if (routeMode) {
+      if (routeDragMovedRef.current) {
+        routeDragMovedRef.current = false;
+        return;
+      }
+
+      const idx = routePointHitIndex(routePoints, mx, my, zoomInt, ox, oy, isMobile ? 18 : 12);
+      if (idx >= 0) return;
+
       setRoutePoints((prev) => [...prev, pixelToLatLon(mx, my, zoomInt, ox, oy)]);
       return;
     }
@@ -671,7 +760,19 @@ export default function ThermalAtlasPro() {
         y: e.clientY,
       });
 
+      const rect = canvas.getBoundingClientRect();
+      const mx = (e.clientX - rect.left) * (W / rect.width);
+      const my = (e.clientY - rect.top) * (H / rect.height);
       const pts = Array.from(activePointers.current.values());
+
+      if (pts.length === 1 && routeMode) {
+        const idx = routePointHitIndex(routePoints, mx, my, zoomInt, ox, oy, isMobile ? 22 : 14);
+        if (idx >= 0) {
+          routeDragIndexRef.current = idx;
+          routeDragMovedRef.current = false;
+        }
+        return;
+      }
 
       if (pts.length === 1 && !routeMode) {
         setIsDragging(true);
@@ -684,6 +785,7 @@ export default function ThermalAtlasPro() {
       }
 
       if (pts.length === 2) {
+        routeDragIndexRef.current = null;
         setIsDragging(false);
         setDragStart(null);
         pinchState.current.startDist = distanceBetweenTouches(pts[0], pts[1]);
@@ -691,7 +793,7 @@ export default function ThermalAtlasPro() {
         pinchState.current.lastStepZoom = zoomInt;
       }
     },
-    [center.lat, center.lon, routeMode, zoomInt]
+    [W, H, center.lat, center.lon, routeMode, routePoints, zoomInt, ox, oy, isMobile]
   );
 
   const handlePointerMove = useCallback(
@@ -725,6 +827,16 @@ export default function ThermalAtlasPro() {
             setZoom(steppedZoom);
           }
         }
+        return;
+      }
+
+      if (routeMode && pts.length === 1 && routeDragIndexRef.current !== null) {
+        e.preventDefault();
+        const ll = pixelToLatLon(mx, my, zoomInt, ox, oy);
+        routeDragMovedRef.current = true;
+        setRoutePoints((prev) =>
+          prev.map((p, i) => (i === routeDragIndexRef.current ? ll : p))
+        );
         return;
       }
 
@@ -764,6 +876,7 @@ export default function ThermalAtlasPro() {
     }
 
     if (pts.length === 0) {
+      routeDragIndexRef.current = null;
       setIsDragging(false);
       setDragStart(null);
     }
@@ -774,6 +887,7 @@ export default function ThermalAtlasPro() {
     pinchState.current.startDist = null;
     pinchState.current.startZoom = null;
     pinchState.current.lastStepZoom = null;
+    routeDragIndexRef.current = null;
 
     if (activePointers.current.size === 0) {
       setIsDragging(false);
@@ -980,6 +1094,12 @@ export default function ThermalAtlasPro() {
               <button onClick={() => setRoutePoints([])} style={{ ...tabS(isMobile), color: "#ff8866" }}>
                 Clear
               </button>
+              <button onClick={() => exportRouteAsCup(routePoints)} style={{ ...tabS(isMobile), color: "#9ee37d" }}>
+                Export CUP
+              </button>
+              <button onClick={() => exportRouteAsGpx(routePoints)} style={{ ...tabS(isMobile), color: "#8cc8ff" }}>
+                Export GPX
+              </button>
             </>
           )}
 
@@ -1084,7 +1204,7 @@ export default function ThermalAtlasPro() {
               color: "#66bbaa",
             }}
           >
-            Tap the map to add waypoints. Each leg shows distance and bearing. Undo removes last point.
+            Tap to add waypoints. Drag an existing numbered point to move it. Undo removes the last point. Export CUP for XCTrack waypoint import, or GPX for general route use.
           </div>
         )}
 
