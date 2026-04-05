@@ -334,10 +334,6 @@ export default function ThermalAtlasPro() {
   const [gpsEnabled, setGpsEnabled] = useState(false);
   const [gpsPosition, setGpsPosition] = useState(null);
   const [gpsError, setGpsError] = useState("");
-  const [showPlannerPanel, setShowPlannerPanel] = useState(false);
-  const [igcTrack, setIgcTrack] = useState([]);
-  const [igcFileName, setIgcFileName] = useState("");
-  const [showIgcTrack, setShowIgcTrack] = useState(true);
   const igcInputRef = useRef(null);
 
   const [viewportWidth, setViewportWidth] = useState(
