@@ -85,19 +85,19 @@ const BASEMAPS = {
     label: "Streets",
     url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
     attr: "© OpenStreetMap",
-    opacity: 0.32,
+    opacity: 1,
   },
   topo: {
     label: "Terrain",
     url: "https://tile.opentopomap.org/{z}/{x}/{y}.png",
     attr: "© OpenTopoMap",
-    opacity: 0.42,
+    opacity: 1,
   },
   satellite: {
     label: "Satellite",
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     attr: "© Esri",
-    opacity: 0.48,
+    opacity: 1,
   },
 };
 
@@ -333,9 +333,8 @@ export default function ThermalAtlasPro() {
         loadTile(bu, bk);
 
         if (tileCache.current[bk] instanceof Image) {
-          ctx.globalAlpha = bm.opacity;
-          ctx.drawImage(tileCache.current[bk], px, py, TS, TS);
           ctx.globalAlpha = 1;
+          ctx.drawImage(tileCache.current[bk], px, py, TS, TS);
         }
 
         if (showKK7) {
