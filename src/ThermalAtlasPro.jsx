@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { preprocessAirspaceGeoJSON, drawAirspaceLayer, findAirspaceAtPoint } from "./airspace";
 
 // ============================================================
 // FLYING SITES DATABASE — Birmingham to South Coast
@@ -210,6 +211,10 @@ export default function ThermalAtlasPro() {
   const [showAnomaly, setShowAnomaly] = useState(true);
   const [thresholdMode, setThresholdMode] = useState("hot2");
   const [anomalyLoadState, setAnomalyLoadState] = useState("loading");
+  const [airspaceFeatures, setAirspaceFeatures] = useState([]);
+  const [showAirspace, setShowAirspace] = useState(false);
+  const [airspaceLoadState, setAirspaceLoadState] = useState("loading");
+  const [selectedAirspace, setSelectedAirspace] = useState(null);
 
   const [viewportWidth, setViewportWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1024
@@ -240,6 +245,22 @@ export default function ThermalAtlasPro() {
       .catch((err) => {
         console.error("Failed to load anomaly grid:", err);
         setAnomalyLoadState("error");
+      });
+  }, []);
+
+  useEffect(() => {
+    fetch(`${import.meta.env.BASE_URL}data/uk_airspace.geojson`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        setAirspaceFeatures(preprocessAirspaceGeoJSON(data));
+        setAirspaceLoadState("ready");
+      })
+      .catch((err) => {
+        console.error("Failed to load airspace GeoJSON:", err);
+        setAirspaceLoadState("error");
       });
   }, []);
 
@@ -381,6 +402,15 @@ export default function ThermalAtlasPro() {
 
       ctx.restore();
       ctx.globalAlpha = 1;
+    }
+
+    if (showAirspace && airspaceFeatures.length > 0) {
+      drawAirspaceLayer(
+        ctx,
+        airspaceFeatures,
+        (lat, lon) => latLonToPixel(lat, lon, zoomInt, ox, oy),
+        selectedAirspace?.id || null
+      );
     }
 
     if (routePoints.length > 0) {
@@ -536,6 +566,9 @@ export default function ThermalAtlasPro() {
     anomalyCells,
     showAnomaly,
     thresholdMode,
+    airspaceFeatures,
+    showAirspace,
+    selectedAirspace,
     loadTile,
     W,
     H,
@@ -586,11 +619,19 @@ export default function ThermalAtlasPro() {
   };
 
   const handleClick = (e) => {
-    if (!routeMode) return;
     const rect = canvasRef.current.getBoundingClientRect();
     const mx = (e.clientX - rect.left) * (W / rect.width);
     const my = (e.clientY - rect.top) * (H / rect.height);
-    setRoutePoints((prev) => [...prev, pixelToLatLon(mx, my, zoomInt, ox, oy)]);
+
+    if (routeMode) {
+      setRoutePoints((prev) => [...prev, pixelToLatLon(mx, my, zoomInt, ox, oy)]);
+      return;
+    }
+
+    if (showAirspace && airspaceFeatures.length > 0) {
+      const ll = pixelToLatLon(mx, my, zoomInt, ox, oy);
+      setSelectedAirspace(findAirspaceAtPoint(airspaceFeatures, ll.lon, ll.lat));
+    }
   };
 
   const handleWheel = (e) => {
@@ -861,25 +902,32 @@ export default function ThermalAtlasPro() {
             alignItems: "center",
           }}
         >
-          <label style={chkS(isMobile)}>
-            <input type="checkbox" checked={showSites} onChange={() => setShowSites(!showSites)} /> Sites
-          </label>
-          <label style={chkS(isMobile)}>
-            <input type="checkbox" checked={showLabels} onChange={() => setShowLabels(!showLabels)} /> Labels
-          </label>
+          <button
+            onClick={() => setShowSites(!showSites)}
+            style={toggleBtnS(isMobile, showSites, "rgba(80,220,160,0.14)", "#66e0b6")}
+          >
+            {showSites ? "Sites On" : "Sites Off"}
+          </button>
 
-          <span style={sepS}>|</span>
+          <button
+            onClick={() => setShowLabels(!showLabels)}
+            style={toggleBtnS(isMobile, showLabels, "rgba(120,180,255,0.14)", "#88bbff")}
+          >
+            {showLabels ? "Labels On" : "Labels Off"}
+          </button>
 
           <button
             onClick={() => setShowAnomaly(!showAnomaly)}
-            style={{
-              ...tabS(isMobile),
-              fontWeight: 700,
-              background: showAnomaly ? "rgba(255,140,0,0.12)" : "rgba(255,255,255,0.04)",
-              color: showAnomaly ? "#ffbb66" : "#667788",
-            }}
+            style={toggleBtnS(isMobile, showAnomaly, "rgba(255,140,0,0.14)", "#ffbb66")}
           >
-            {showAnomaly ? "Hide Anomaly" : "Show Anomaly"}
+            {showAnomaly ? "Anomaly On" : "Anomaly Off"}
+          </button>
+
+          <button
+            onClick={() => setShowAirspace(!showAirspace)}
+            style={toggleBtnS(isMobile, showAirspace, "rgba(160,120,255,0.14)", "#b79cff")}
+          >
+            {showAirspace ? "Airspace On" : "Airspace Off"}
           </button>
 
           <button
@@ -1040,6 +1088,28 @@ export default function ThermalAtlasPro() {
           </div>
         )}
 
+        {selectedAirspace && !routeMode && (
+          <div
+            style={{
+              marginTop: 4,
+              padding: "6px 10px",
+              background: "rgba(167,139,250,0.08)",
+              borderRadius: 6,
+              border: "1px solid rgba(167,139,250,0.16)",
+              fontSize: 11,
+              display: "flex",
+              gap: 14,
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
+            <span style={{ fontWeight: 700, color: "#b79cff" }}>{selectedAirspace.name}</span>
+            <span>Type: <b>{selectedAirspace.type || "—"}</b></span>
+            <span>Base: <b>{selectedAirspace.lower || "—"}</b></span>
+            <span>Top: <b>{selectedAirspace.upper || "—"}</b></span>
+          </div>
+        )}
+
         {hoveredSite && !routeMode && (() => {
           const si = SITES.find((s) => s.name === hoveredSite);
           return si ? (
@@ -1100,6 +1170,18 @@ export default function ThermalAtlasPro() {
               {anomalyLoadState === "error" && "Failed to load /data/anomaly_grid.json"}
               {anomalyLoadState === "ready" &&
                 `${anomalyCells.length.toLocaleString()} cells loaded${anomalyMeta?.scale_m ? ` @ ${anomalyMeta.scale_m}m` : ""}`}
+            </div>
+          </div>
+
+          <div style={pnlS}>
+            <div style={pnlT}>AIRSPACE</div>
+            <div style={{ fontSize: 8, opacity: 0.5, marginTop: 2 }}>
+              {airspaceLoadState === "loading" && "Loading uk_airspace.geojson..."}
+              {airspaceLoadState === "error" && "Missing /data/uk_airspace.geojson"}
+              {airspaceLoadState === "ready" && `${airspaceFeatures.length.toLocaleString()} zones loaded`}
+            </div>
+            <div style={{ fontSize: 8, opacity: 0.4, marginTop: 2 }}>
+              Tap a zone to inspect name, class, base and top.
             </div>
           </div>
 
@@ -1170,6 +1252,14 @@ const chkS = (isMobile = false) => ({
   gap: 4,
   cursor: "pointer",
   color: "#889aaa",
+});
+
+const toggleBtnS = (isMobile = false, active = false, activeBg = "rgba(255,255,255,0.12)", activeColor = "#c8d4e0") => ({
+  ...tabS(isMobile),
+  minHeight: isMobile ? 38 : "auto",
+  fontWeight: 700,
+  background: active ? activeBg : "rgba(255,255,255,0.04)",
+  color: active ? activeColor : "#667788",
 });
 
 const lblS = (isMobile = false) => ({
