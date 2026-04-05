@@ -368,6 +368,7 @@ export default function ThermalAtlasPro() {
     }
 
     setGpsError("");
+    setZoom(12);
 
     gpsWatchRef.current = navigator.geolocation.watchPosition(
       (pos) => {
@@ -378,6 +379,7 @@ export default function ThermalAtlasPro() {
         };
         setGpsPosition(next);
         setCenter({ lat: next.lat, lon: next.lon });
+        setZoom(12);
       },
       (err) => {
         setGpsError(err.message || "Unable to get GPS position.");
@@ -1496,7 +1498,14 @@ export default function ThermalAtlasPro() {
           <button onClick={() => igcInputRef.current?.click()} style={bottomNavBtnS(false)}>
             Import IGC
           </button>
-          <button onClick={() => setGpsEnabled((v) => !v)} style={bottomToggleWrapS}>
+          <button
+            onClick={() => {
+              const next = !gpsEnabled;
+              setGpsEnabled(next);
+              if (next) setZoom(12);
+            }}
+            style={bottomToggleWrapS}
+          >
             <span style={switchS(gpsEnabled)}><span style={switchKnobS(gpsEnabled)} /></span>
             GPS
           </button>
