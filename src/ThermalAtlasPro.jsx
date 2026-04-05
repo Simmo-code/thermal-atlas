@@ -379,7 +379,6 @@ export default function ThermalAtlasPro() {
         };
         setGpsPosition(next);
         setCenter({ lat: next.lat, lon: next.lon });
-        setZoom(12);
       },
       (err) => {
         setGpsError(err.message || "Unable to get GPS position.");
