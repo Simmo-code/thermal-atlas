@@ -85,19 +85,19 @@ const BASEMAPS = {
     label: "Streets",
     url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
     attr: "© OpenStreetMap",
-    opacity: 0.45,
+    opacity: 0.32,
   },
   topo: {
     label: "Terrain",
     url: "https://tile.opentopomap.org/{z}/{x}/{y}.png",
     attr: "© OpenTopoMap",
-    opacity: 0.55,
+    opacity: 0.42,
   },
   satellite: {
     label: "Satellite",
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     attr: "© Esri",
-    opacity: 0.6,
+    opacity: 0.48,
   },
 };
 
@@ -157,10 +157,10 @@ function bearing(lat1, lon1, lat2, lon2) {
 function hotspotStyle(cell, thresholdMode) {
   if (thresholdMode === "hot3") {
     if (!cell.hot3) return null;
-    return { color: "#ff2814", alpha: 0.42 };
+    return { color: "#ff3a20", alpha: 0.34 };
   }
-  if (cell.hot3) return { color: "#ff1e0a", alpha: 0.48 };
-  if (cell.hot2) return { color: "#ffa01e", alpha: 0.28 };
+  if (cell.hot3) return { color: "#ff3218", alpha: 0.38 };
+  if (cell.hot2) return { color: "#ffae32", alpha: 0.20 };
   return null;
 }
 
@@ -345,7 +345,7 @@ export default function ThermalAtlasPro() {
           loadTile(ku, kk);
 
           if (tileCache.current[kk] instanceof Image) {
-            ctx.globalAlpha = 0.75;
+            ctx.globalAlpha = basemap === "satellite" ? 0.5 : 0.58;
             ctx.drawImage(tileCache.current[kk], px, py, TS, TS);
             ctx.globalAlpha = 1;
           }
@@ -1091,9 +1091,9 @@ export default function ThermalAtlasPro() {
           <div style={pnlS}>
             <div style={pnlT}>ANOMALY HOTSPOTS</div>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3, flexWrap: "wrap" }}>
-              <div style={{ width: 12, height: 8, background: "rgba(255,160,30,0.28)", borderRadius: 2 }} />
+              <div style={{ width: 12, height: 8, background: "rgba(255,174,50,0.20)", borderRadius: 2 }} />
               <span style={{ fontSize: 8, opacity: 0.65 }}>+2°C candidate</span>
-              <div style={{ width: 12, height: 8, background: "rgba(255,30,10,0.48)", borderRadius: 2, marginLeft: 8 }} />
+              <div style={{ width: 12, height: 8, background: "rgba(255,50,24,0.38)", borderRadius: 2, marginLeft: 8 }} />
               <span style={{ fontSize: 8, opacity: 0.65 }}>+3°C strong trigger</span>
             </div>
             <div style={{ fontSize: 8, opacity: 0.45, marginTop: 2 }}>
