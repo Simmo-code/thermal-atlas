@@ -545,7 +545,7 @@ export default function ThermalAtlasPro() {
         if (i === 0) ctx.moveTo(p.x, p.y);
         else ctx.lineTo(p.x, p.y);
       });
-      ctx.strokeStyle = "rgba(255,255,255,0.9)";
+      ctx.strokeStyle = "rgba(255,70,70,0.95)";
       ctx.lineWidth = isMobile ? 2.5 : 2;
       ctx.stroke();
 
@@ -1068,7 +1068,7 @@ export default function ThermalAtlasPro() {
             gap: 10,
             padding: isMobile ? "10px 12px" : "12px 14px",
             borderRadius: 16,
-            background: "rgba(18,28,44,0.92)",
+            background: "rgba(34,46,68,0.92)",
             border: "1px solid rgba(255,255,255,0.06)",
             boxShadow: "0 10px 26px rgba(0,0,0,0.22)",
           }}
@@ -1097,7 +1097,7 @@ export default function ThermalAtlasPro() {
               padding: "6px",
               borderRadius: 14,
               background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.08)",
             }}
           >
             <button onClick={() => setZoom((z) => Math.min(Math.round(z) + 1, 13))} style={btnS(isMobile)}>+</button>
@@ -1109,65 +1109,51 @@ export default function ThermalAtlasPro() {
         <div
           style={{
             display: "flex",
-            gap: 6,
+            gap: 8,
             marginBottom: 8,
             flexWrap: "wrap",
             alignItems: "center",
-            padding: isMobile ? "8px 10px" : "9px 12px",
-            borderRadius: 14,
-            background: "rgba(18,28,44,0.88)",
-            border: "1px solid rgba(255,255,255,0.05)",
+            padding: isMobile ? "10px 12px" : "10px 14px",
+            borderRadius: 16,
+            background: "rgba(34,46,68,0.88)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "0 8px 22px rgba(0,0,0,0.18)",
           }}
         >
-          <span style={lblS(isMobile)}>Base:</span>
-          {Object.entries(BASEMAPS).map(([k, v]) => (
-            <button
-              key={k}
-              onClick={() => setBasemap(k)}
-              style={{
-                ...tabS(isMobile),
-                fontWeight: basemap === k ? 700 : 400,
-                background: basemap === k ? "#1a3a5a" : "rgba(255,255,255,0.04)",
-                color: basemap === k ? "#88bbdd" : "#556677",
-              }}
-            >
-              {v.label}
-            </button>
-          ))}
+          <span style={lblS(isMobile)}>Base</span>
+          <select
+            value={basemap}
+            onChange={(e) => setBasemap(e.target.value)}
+            style={selectS(isMobile)}
+          >
+            {Object.entries(BASEMAPS).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v.label}
+              </option>
+            ))}
+          </select>
 
-          <span style={sepS}>|</span>
-
-          <span style={lblS(isMobile)}>KK7:</span>
-          {Object.entries(KK7_LAYERS).map(([k, v]) => (
-            <button
-              key={k}
-              onClick={() => {
-                setKk7Layer(k);
-                setShowKK7(true);
-              }}
-              style={{
-                ...tabS(isMobile),
-                fontSize: isMobile ? 9 : 8,
-                padding: isMobile ? "6px 8px" : "2px 5px",
-                fontWeight: kk7Layer === k && showKK7 ? 700 : 400,
-                background:
-                  kk7Layer === k && showKK7 ? "#1a4a7a" : "rgba(255,255,255,0.03)",
-                color: kk7Layer === k && showKK7 ? "#88ccff" : "#445566",
-              }}
-            >
-              {v.label}
-            </button>
-          ))}
+          <span style={lblS(isMobile)}>KK7</span>
+          <select
+            value={kk7Layer}
+            onChange={(e) => {
+              setKk7Layer(e.target.value);
+              setShowKK7(true);
+            }}
+            style={selectS(isMobile)}
+          >
+            {Object.entries(KK7_LAYERS).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v.label}
+              </option>
+            ))}
+          </select>
 
           <button
-            onClick={() => setShowKK7(!showKK7)}
-            style={{
-              ...tabS(isMobile),
-              background: showKK7 ? "rgba(255,100,50,0.1)" : "rgba(255,255,255,0.03)",
-              color: showKK7 ? "#ff8866" : "#556677",
-            }}
+            onClick={() => setShowKK7((v) => !v)}
+            style={toggleBtnS(isMobile, showKK7, "rgba(255,120,90,0.20)", "#ffd1c7")}
           >
-            {showKK7 ? "Hide" : "Show"}
+            {showKK7 ? "KK7 On" : "KK7 Off"}
           </button>
         </div>
 
@@ -1281,8 +1267,8 @@ export default function ThermalAtlasPro() {
                       gap: 10,
                       padding: "8px 10px",
                       borderRadius: 8,
-                      background: "rgba(255,255,255,0.04)",
-                      border: "1px solid rgba(255,255,255,0.05)",
+                      background: "rgba(255,255,255,0.06)",
+                      border: "1px solid rgba(255,255,255,0.08)",
                     }}
                   >
                     <span style={{ color: "#d8e4f4", fontWeight: 700 }}>Leg {i + 1}</span>
@@ -1560,10 +1546,10 @@ const tabS = (isMobile = false) => ({
   padding: isMobile ? "8px 12px" : "5px 10px",
   minHeight: isMobile ? 38 : "auto",
   borderRadius: 999,
-  border: "1px solid rgba(255,255,255,0.05)",
+  border: "1px solid rgba(255,255,255,0.08)",
   cursor: "pointer",
   fontSize: isMobile ? 11 : 10,
-  background: "rgba(255,255,255,0.04)",
+  background: "rgba(255,255,255,0.06)",
 });
 
 const chkS = (isMobile = false) => ({
@@ -1585,8 +1571,21 @@ const toggleBtnS = (isMobile = false, active = false, activeBg = "rgba(255,255,2
 
 const lblS = (isMobile = false) => ({
   fontSize: isMobile ? 11 : 10,
-  color: "#556677",
+  color: "#d7e2f0",
   marginRight: 2,
+  fontWeight: 700,
+});
+
+const selectS = (isMobile = false) => ({
+  minHeight: isMobile ? 40 : 34,
+  padding: isMobile ? "8px 12px" : "6px 10px",
+  borderRadius: 12,
+  border: "1px solid rgba(255,255,255,0.10)",
+  background: "rgba(255,255,255,0.08)",
+  color: "#d7e2f0",
+  fontSize: isMobile ? 12 : 10,
+  fontWeight: 700,
+  outline: "none",
 });
 
 const sepS = {
@@ -1663,8 +1662,8 @@ const plannerStatBoxS = {
   minWidth: 110,
   padding: "8px 10px",
   borderRadius: 8,
-  background: "rgba(255,255,255,0.04)",
-  border: "1px solid rgba(255,255,255,0.05)",
+  background: "rgba(255,255,255,0.06)",
+  border: "1px solid rgba(255,255,255,0.08)",
 };
 
 const plannerStatLabelS = {
@@ -1683,7 +1682,7 @@ const panelCloseBtnS = {
   height: 28,
   borderRadius: 999,
   border: "1px solid rgba(255,255,255,0.08)",
-  background: "rgba(255,255,255,0.04)",
+  background: "rgba(255,255,255,0.06)",
   color: "#d7e2f0",
   cursor: "pointer",
   fontWeight: 700,
