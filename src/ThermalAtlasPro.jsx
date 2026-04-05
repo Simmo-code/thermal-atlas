@@ -1005,14 +1005,38 @@ export default function ThermalAtlasPro() {
   const handleIgcImport = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     const content = await file.text();
     const pts = parseIgcText(content);
+
     setIgcTrack(pts);
     setIgcFileName(file.name);
     setShowIgcTrack(true);
+
     if (pts.length > 0) {
-      setCenter(pts[Math.floor(pts.length / 2)]);
+      let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+      for (const p of pts) {
+        if (p.lat < minLat) minLat = p.lat;
+        if (p.lat > maxLat) maxLat = p.lat;
+        if (p.lon < minLon) minLon = p.lon;
+        if (p.lon > maxLon) maxLon = p.lon;
+      }
+
+      const centerLat = (minLat + maxLat) / 2;
+      const centerLon = (minLon + maxLon) / 2;
+      const spanLat = Math.max(0.01, maxLat - minLat);
+      const spanLon = Math.max(0.01, maxLon - minLon);
+
+      let nextZoom = 11;
+      if (spanLat > 1.8 || spanLon > 2.5) nextZoom = 7;
+      else if (spanLat > 0.9 || spanLon > 1.3) nextZoom = 8;
+      else if (spanLat > 0.45 || spanLon > 0.7) nextZoom = 9;
+      else if (spanLat > 0.2 || spanLon > 0.35) nextZoom = 10;
+
+      setCenter({ lat: centerLat, lon: centerLon });
+      setZoom(nextZoom);
     }
+
     e.target.value = "";
   };
 
@@ -1040,8 +1064,13 @@ export default function ThermalAtlasPro() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            marginBottom: 5,
-            gap: 8,
+            marginBottom: 10,
+            gap: 10,
+            padding: isMobile ? "10px 12px" : "12px 14px",
+            borderRadius: 16,
+            background: "rgba(18,28,44,0.92)",
+            border: "1px solid rgba(255,255,255,0.06)",
+            boxShadow: "0 10px 26px rgba(0,0,0,0.22)",
           }}
         >
           <div>
@@ -1056,13 +1085,23 @@ export default function ThermalAtlasPro() {
             >
               THERMAL ATLAS UK
             </h1>
-            <p style={{ fontSize: isMobile ? 11 : 10, opacity: 0.4, margin: 0 }}>
-              KK7 thermals + satellite anomaly + terrain + sites — Birmingham to South Coast
+            <p style={{ fontSize: isMobile ? 11 : 10, opacity: 0.55, margin: "2px 0 0 0" }}>
+              Soaring planner · thermals · airspace · route tools
             </p>
           </div>
-          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 6,
+              alignItems: "center",
+              padding: "6px",
+              borderRadius: 14,
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.05)",
+            }}
+          >
             <button onClick={() => setZoom((z) => Math.min(Math.round(z) + 1, 13))} style={btnS(isMobile)}>+</button>
-            <span style={{ fontSize: 11, color: "#88aacc", minWidth: 24, textAlign: "center" }}>z{zoomInt}</span>
+            <span style={{ fontSize: 11, color: "#88aacc", minWidth: 30, textAlign: "center", fontWeight: 700 }}>z{zoomInt}</span>
             <button onClick={() => setZoom((z) => Math.max(Math.round(z) - 1, 6))} style={btnS(isMobile)}>−</button>
           </div>
         </div>
@@ -1070,10 +1109,14 @@ export default function ThermalAtlasPro() {
         <div
           style={{
             display: "flex",
-            gap: 4,
-            marginBottom: 4,
+            gap: 6,
+            marginBottom: 8,
             flexWrap: "wrap",
             alignItems: "center",
+            padding: isMobile ? "8px 10px" : "9px 12px",
+            borderRadius: 14,
+            background: "rgba(18,28,44,0.88)",
+            border: "1px solid rgba(255,255,255,0.05)",
           }}
         >
           <span style={lblS(isMobile)}>Base:</span>
@@ -1128,60 +1171,7 @@ export default function ThermalAtlasPro() {
           </button>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 5,
-            marginBottom: 4,
-            flexWrap: "wrap",
-            alignItems: "center",
-          }}
-        >
-          <button
-            onClick={() => setThresholdMode("hot2")}
-            style={{
-              ...tabS(isMobile),
-              fontWeight: thresholdMode === "hot2" ? 700 : 500,
-              background: thresholdMode === "hot2" ? "rgba(255,165,0,0.14)" : "rgba(255,255,255,0.04)",
-              color: thresholdMode === "hot2" ? "#ffbb55" : "#667788",
-            }}
-          >
-            +2°C
-          </button>
 
-          <button
-            onClick={() => setThresholdMode("hot3")}
-            style={{
-              ...tabS(isMobile),
-              fontWeight: thresholdMode === "hot3" ? 700 : 500,
-              background: thresholdMode === "hot3" ? "rgba(255,60,40,0.14)" : "rgba(255,255,255,0.04)",
-              color: thresholdMode === "hot3" ? "#ff7766" : "#667788",
-            }}
-          >
-            +3°C
-          </button>
-
-          {REGIONS.map((r) => (
-            <button
-              key={r}
-              onClick={() => toggleRegion(r)}
-              style={{
-                padding: isMobile ? "6px 8px" : "1px 4px",
-                borderRadius: 999,
-                border: "none",
-                cursor: "pointer",
-                fontSize: isMobile ? 10 : 8,
-                background: selectedRegions.has(r)
-                  ? `${REGION_COLORS[r]}33`
-                  : "rgba(255,255,255,0.02)",
-                color: selectedRegions.has(r) ? REGION_COLORS[r] : "#334455",
-                fontWeight: selectedRegions.has(r) ? 700 : 400,
-              }}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
 
         <div
           style={{
@@ -1195,7 +1185,7 @@ export default function ThermalAtlasPro() {
           <input
             ref={igcInputRef}
             type="file"
-            accept=".igc"
+            accept=".igc,.icg"
             onChange={handleIgcImport}
             style={{ display: "none" }}
           />
@@ -1317,6 +1307,35 @@ export default function ThermalAtlasPro() {
             }}
           >
             Tap to add turnpoints. Drag numbered points to move them. Open the Planner panel from the bottom bar for total distance, leg breakdown, task controls, and export.
+          </div>
+        )}
+
+        {routeMode && (
+          <div
+            style={{
+              marginTop: 6,
+              padding: "8px 10px",
+              background: "rgba(18,28,44,0.96)",
+              borderRadius: 8,
+              border: "1px solid rgba(120,180,255,0.12)",
+              fontSize: 11,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
+            <span style={{ fontWeight: 800, color: "#dce8f8" }}>PLANNER SUMMARY</span>
+            <span style={{ opacity: 0.78 }}>Points: <b>{openRoutePoints.length}</b></span>
+            <span style={{ opacity: 0.78 }}>Legs: <b>{legStats.length}</b></span>
+            <span style={{ opacity: 0.95, color: "#9ee37d" }}>
+              Total: <b>{rStats ? rStats.total.toFixed(1) : "0.0"} km</b>
+            </span>
+            {legStats.map((l, i) => (
+              <span key={i} style={{ opacity: 0.7, fontSize: 10 }}>
+                L{i + 1}: {l.dist.toFixed(1)} km · {l.brg.toFixed(0)}°
+              </span>
+            ))}
           </div>
         )}
 
@@ -1525,25 +1544,26 @@ export default function ThermalAtlasPro() {
 }
 
 const btnS = (isMobile = false) => ({
-  padding: isMobile ? "10px 14px" : "3px 10px",
+  padding: isMobile ? "10px 14px" : "6px 12px",
   minWidth: isMobile ? 44 : "auto",
   minHeight: isMobile ? 44 : "auto",
-  borderRadius: 4,
-  border: "none",
+  borderRadius: 10,
+  border: "1px solid rgba(255,255,255,0.06)",
   cursor: "pointer",
-  background: "rgba(255,255,255,0.08)",
+  background: "rgba(255,255,255,0.06)",
   color: "#88aacc",
   fontSize: isMobile ? 16 : 13,
   fontWeight: 700,
 });
 
 const tabS = (isMobile = false) => ({
-  padding: isMobile ? "8px 10px" : "3px 7px",
+  padding: isMobile ? "8px 12px" : "5px 10px",
   minHeight: isMobile ? 38 : "auto",
-  borderRadius: 4,
-  border: "none",
+  borderRadius: 999,
+  border: "1px solid rgba(255,255,255,0.05)",
   cursor: "pointer",
   fontSize: isMobile ? 11 : 10,
+  background: "rgba(255,255,255,0.04)",
 });
 
 const chkS = (isMobile = false) => ({
