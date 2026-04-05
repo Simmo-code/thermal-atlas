@@ -262,6 +262,31 @@ function reverseRoutePoints(points) {
   return [...open].reverse();
 }
 
+
+function parseIgcCoord(raw, hemi, isLat) {
+  const degLen = isLat ? 2 : 3;
+  const deg = Number(raw.slice(0, degLen));
+  const mins = Number(raw.slice(degLen)) / 1000;
+  const dec = deg + mins / 60;
+  return hemi === "S" || hemi === "W" ? -dec : dec;
+}
+
+function parseIgcText(text) {
+  const pts = [];
+  const lines = text.split(/\r?\n/);
+  for (const line of lines) {
+    if (!line.startsWith("B") || line.length < 24) continue;
+    const latRaw = line.slice(7, 14);
+    const latHemi = line.slice(14, 15);
+    const lonRaw = line.slice(15, 23);
+    const lonHemi = line.slice(23, 24);
+    const lat = parseIgcCoord(latRaw, latHemi, true);
+    const lon = parseIgcCoord(lonRaw, lonHemi, false);
+    if (Number.isFinite(lat) && Number.isFinite(lon)) pts.push({ lat, lon });
+  }
+  return pts;
+}
+
 // ============================================================
 // COMPONENT
 // ============================================================
@@ -301,6 +326,11 @@ export default function ThermalAtlasPro() {
   const [showAirspace, setShowAirspace] = useState(false);
   const [airspaceLoadState, setAirspaceLoadState] = useState("loading");
   const [selectedAirspace, setSelectedAirspace] = useState(null);
+  const [showPlannerPanel, setShowPlannerPanel] = useState(false);
+  const [igcTrack, setIgcTrack] = useState([]);
+  const [igcFileName, setIgcFileName] = useState("");
+  const [showIgcTrack, setShowIgcTrack] = useState(true);
+  const igcInputRef = useRef(null);
 
   const [viewportWidth, setViewportWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1024
@@ -422,6 +452,8 @@ export default function ThermalAtlasPro() {
 
   const openRoutePoints = routeClosed ? routePoints.slice(0, -1) : routePoints;
 
+  const legStats = rStats?.legs || [];
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -503,6 +535,33 @@ export default function ThermalAtlasPro() {
         (lat, lon) => latLonToPixel(lat, lon, zoomInt, ox, oy),
         selectedAirspace?.id || null
       );
+    }
+
+    if (showIgcTrack && igcTrack.length > 1) {
+      ctx.save();
+      ctx.beginPath();
+      igcTrack.forEach((pt, i) => {
+        const p = latLonToPixel(pt.lat, pt.lon, zoomInt, ox, oy);
+        if (i === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
+      ctx.strokeStyle = "rgba(255,255,255,0.9)";
+      ctx.lineWidth = isMobile ? 2.5 : 2;
+      ctx.stroke();
+
+      const start = latLonToPixel(igcTrack[0].lat, igcTrack[0].lon, zoomInt, ox, oy);
+      const end = latLonToPixel(igcTrack[igcTrack.length - 1].lat, igcTrack[igcTrack.length - 1].lon, zoomInt, ox, oy);
+
+      ctx.beginPath();
+      ctx.arc(start.x, start.y, isMobile ? 5 : 4, 0, Math.PI * 2);
+      ctx.fillStyle = "#7CFFB2";
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(end.x, end.y, isMobile ? 5 : 4, 0, Math.PI * 2);
+      ctx.fillStyle = "#FFD166";
+      ctx.fill();
+      ctx.restore();
     }
 
     if (routePoints.length > 0) {
@@ -675,6 +734,8 @@ export default function ThermalAtlasPro() {
     airspaceFeatures,
     showAirspace,
     selectedAirspace,
+    igcTrack,
+    showIgcTrack,
     loadTile,
     W,
     H,
@@ -941,6 +1002,20 @@ export default function ThermalAtlasPro() {
     }
   }, []);
 
+  const handleIgcImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const content = await file.text();
+    const pts = parseIgcText(content);
+    setIgcTrack(pts);
+    setIgcFileName(file.name);
+    setShowIgcTrack(true);
+    if (pts.length > 0) {
+      setCenter(pts[Math.floor(pts.length / 2)]);
+    }
+    e.target.value = "";
+  };
+
   const toggleRegion = (r) => {
     setSelectedRegions((p) => {
       const n = new Set(p);
@@ -1063,34 +1138,6 @@ export default function ThermalAtlasPro() {
           }}
         >
           <button
-            onClick={() => setShowSites(!showSites)}
-            style={toggleBtnS(isMobile, showSites, "rgba(80,220,160,0.14)", "#66e0b6")}
-          >
-            {showSites ? "Sites On" : "Sites Off"}
-          </button>
-
-          <button
-            onClick={() => setShowLabels(!showLabels)}
-            style={toggleBtnS(isMobile, showLabels, "rgba(120,180,255,0.14)", "#88bbff")}
-          >
-            {showLabels ? "Labels On" : "Labels Off"}
-          </button>
-
-          <button
-            onClick={() => setShowAnomaly(!showAnomaly)}
-            style={toggleBtnS(isMobile, showAnomaly, "rgba(255,140,0,0.14)", "#ffbb66")}
-          >
-            {showAnomaly ? "Anomaly On" : "Anomaly Off"}
-          </button>
-
-          <button
-            onClick={() => setShowAirspace(!showAirspace)}
-            style={toggleBtnS(isMobile, showAirspace, "rgba(160,120,255,0.14)", "#b79cff")}
-          >
-            {showAirspace ? "Airspace On" : "Airspace Off"}
-          </button>
-
-          <button
             onClick={() => setThresholdMode("hot2")}
             style={{
               ...tabS(isMobile),
@@ -1114,59 +1161,13 @@ export default function ThermalAtlasPro() {
             +3°C
           </button>
 
-          <span style={sepS}>|</span>
-
-          <button
-            onClick={() => {
-              setRouteMode(!routeMode);
-              if (routeMode) setRoutePoints([]);
-            }}
-            style={{
-              ...tabS(isMobile),
-              padding: isMobile ? "10px 12px" : "3px 10px",
-              fontWeight: 700,
-              background: routeMode ? "rgba(0,255,200,0.12)" : "rgba(255,255,255,0.04)",
-              color: routeMode ? "#00ffcc" : "#667788",
-            }}
-          >
-            {routeMode ? "✓ Planner On" : "Route Planner"}
-          </button>
-
-          {routeMode && routePoints.length > 0 && (
-            <>
-              <button onClick={() => setRoutePoints((p) => p.slice(0, -1))} style={{ ...tabS(isMobile), color: "#ffcc66" }}>
-                Undo
-              </button>
-              <button onClick={() => setRoutePoints([])} style={{ ...tabS(isMobile), color: "#ff8866" }}>
-                Clear
-              </button>
-              <button onClick={() => setRoutePoints((p) => reverseRoutePoints(p))} style={{ ...tabS(isMobile), color: "#c6b6ff" }}>
-                Reverse
-              </button>
-              <button
-                onClick={() => setRoutePoints((p) => (routeClosed ? ensureOpenRoute(p) : ensureClosedRoute(p)))}
-                style={{ ...tabS(isMobile), color: routeClosed ? "#8cc8ff" : "#9ee37d" }}
-              >
-                {routeClosed ? "Open Task" : "Close Task"}
-              </button>
-              <button onClick={() => exportRouteAsCup(openRoutePoints)} style={{ ...tabS(isMobile), color: "#9ee37d" }}>
-                Export CUP
-              </button>
-              <button onClick={() => exportRouteAsGpx(openRoutePoints)} style={{ ...tabS(isMobile), color: "#8cc8ff" }}>
-                Export GPX
-              </button>
-            </>
-          )}
-
-          <span style={sepS}>|</span>
-
           {REGIONS.map((r) => (
             <button
               key={r}
               onClick={() => toggleRegion(r)}
               style={{
                 padding: isMobile ? "6px 8px" : "1px 4px",
-                borderRadius: 3,
+                borderRadius: 999,
                 border: "none",
                 cursor: "pointer",
                 fontSize: isMobile ? 10 : 8,
@@ -1174,7 +1175,7 @@ export default function ThermalAtlasPro() {
                   ? `${REGION_COLORS[r]}33`
                   : "rgba(255,255,255,0.02)",
                 color: selectedRegions.has(r) ? REGION_COLORS[r] : "#334455",
-                fontWeight: selectedRegions.has(r) ? 600 : 400,
+                fontWeight: selectedRegions.has(r) ? 700 : 400,
               }}
             >
               {r}
@@ -1191,6 +1192,13 @@ export default function ThermalAtlasPro() {
             overscrollBehavior: "contain",
           }}
         >
+          <input
+            ref={igcInputRef}
+            type="file"
+            accept=".igc"
+            onChange={handleIgcImport}
+            style={{ display: "none" }}
+          />
           <canvas
             ref={canvasRef}
             width={W}
@@ -1222,65 +1230,75 @@ export default function ThermalAtlasPro() {
           />
         </div>
 
-        {routeMode && (
+        {routeMode && showPlannerPanel && (
           <div
             style={{
               marginTop: 6,
-              padding: isMobile ? "10px" : "8px 10px",
-              background: "rgba(8,16,28,0.92)",
-              borderRadius: 8,
-              border: "1px solid rgba(0,255,200,0.14)",
+              padding: isMobile ? "10px" : "10px 12px",
+              background: "rgba(18,28,44,0.96)",
+              borderRadius: 10,
+              border: "1px solid rgba(120,180,255,0.14)",
               fontSize: 11,
+              boxShadow: "0 10px 24px rgba(0,0,0,0.25)",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
-                alignItems: "center",
-              }}
-            >
-              <span style={{ fontWeight: 800, color: "#00ffcc", letterSpacing: 0.4 }}>
-                XC PLANNER
-              </span>
-              <span style={{ opacity: 0.72 }}>
-                Points: <b>{openRoutePoints.length}</b>
-              </span>
-              <span style={{ opacity: 0.72 }}>
-                Legs: <b>{rStats ? rStats.legs.length : 0}</b>
-              </span>
-              <span style={{ opacity: 0.72 }}>
-                Distance: <b>{rStats ? rStats.total.toFixed(1) : "0.0"} km</b>
-              </span>
-              <span style={{ opacity: 0.72 }}>
-                Task: <b>{routeClosed ? "Closed" : "Open"}</b>
-              </span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontWeight: 800, color: "#dce8f8", fontSize: 15 }}>Planner</span>
+              <button onClick={() => setShowPlannerPanel(false)} style={panelCloseBtnS}>✕</button>
             </div>
 
-            {rStats && rStats.legs.length > 0 && (
-              <div
-                style={{
-                  display: "flex",
-                  gap: 6,
-                  flexWrap: "wrap",
-                  marginTop: 8,
-                }}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+              <div style={plannerStatBoxS}>
+                <div style={plannerStatLabelS}>Total distance</div>
+                <div style={plannerStatValueS}>{rStats ? rStats.total.toFixed(1) : "0.0"} km</div>
+              </div>
+              <div style={plannerStatBoxS}>
+                <div style={plannerStatLabelS}>Legs</div>
+                <div style={plannerStatValueS}>{legStats.length}</div>
+              </div>
+              <div style={plannerStatBoxS}>
+                <div style={plannerStatLabelS}>Points</div>
+                <div style={plannerStatValueS}>{openRoutePoints.length}</div>
+              </div>
+              <div style={plannerStatBoxS}>
+                <div style={plannerStatLabelS}>Task</div>
+                <div style={plannerStatValueS}>{routeClosed ? "Closed" : "Open"}</div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+              <button onClick={() => setRoutePoints((p) => p.slice(0, -1))} style={{ ...tabS(isMobile), color: "#ffcc66" }}>Undo</button>
+              <button onClick={() => setRoutePoints([])} style={{ ...tabS(isMobile), color: "#ff8866" }}>Clear</button>
+              <button onClick={() => setRoutePoints((p) => reverseRoutePoints(p))} style={{ ...tabS(isMobile), color: "#c6b6ff" }}>Reverse</button>
+              <button
+                onClick={() => setRoutePoints((p) => (routeClosed ? ensureOpenRoute(p) : ensureClosedRoute(p)))}
+                style={{ ...tabS(isMobile), color: routeClosed ? "#8cc8ff" : "#9ee37d" }}
               >
-                {rStats.legs.map((l, i) => (
-                  <span
+                {routeClosed ? "Open Task" : "Close Task"}
+              </button>
+              <button onClick={() => exportRouteAsCup(openRoutePoints)} style={{ ...tabS(isMobile), color: "#9ee37d" }}>Export CUP</button>
+              <button onClick={() => exportRouteAsGpx(openRoutePoints)} style={{ ...tabS(isMobile), color: "#8cc8ff" }}>Export GPX</button>
+            </div>
+
+            {legStats.length > 0 && (
+              <div style={{ display: "grid", gap: 6 }}>
+                {legStats.map((l, i) => (
+                  <div
                     key={i}
                     style={{
-                      padding: "4px 8px",
-                      borderRadius: 999,
-                      background: "rgba(255,255,255,0.05)",
-                      border: "1px solid rgba(255,255,255,0.06)",
-                      fontSize: 10,
-                      opacity: 0.8,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      padding: "8px 10px",
+                      borderRadius: 8,
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.05)",
                     }}
                   >
-                    L{i + 1} {l.dist.toFixed(1)}km · {l.brg.toFixed(0)}°
-                  </span>
+                    <span style={{ color: "#d8e4f4", fontWeight: 700 }}>Leg {i + 1}</span>
+                    <span style={{ opacity: 0.82 }}>{l.dist.toFixed(1)} km</span>
+                    <span style={{ opacity: 0.62 }}>{l.brg.toFixed(0)}°</span>
+                  </div>
                 ))}
               </div>
             )}
@@ -1298,7 +1316,7 @@ export default function ThermalAtlasPro() {
               color: "#66bbaa",
             }}
           >
-            Tap to add turnpoints. Drag any numbered point to move it. Use Close Task for a loop, Reverse to flip direction, and Export CUP to import waypoints into XCTrack.
+            Tap to add turnpoints. Drag numbered points to move them. Open the Planner panel from the bottom bar for total distance, leg breakdown, task controls, and export.
           </div>
         )}
 
@@ -1352,6 +1370,75 @@ export default function ThermalAtlasPro() {
             </div>
           ) : null;
         })()}
+
+        <div
+          style={{
+            position: "sticky",
+            bottom: 8,
+            zIndex: 20,
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+            alignItems: "center",
+            marginTop: 10,
+            padding: "8px",
+            borderRadius: 14,
+            background: "rgba(16,22,34,0.94)",
+            border: "1px solid rgba(255,255,255,0.06)",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+          }}
+        >
+          <button onClick={() => setShowPlannerPanel((v) => !v)} style={bottomNavBtnS(showPlannerPanel)}>
+            Planner
+          </button>
+          <button onClick={() => setRouteMode((v) => !v)} style={bottomNavBtnS(routeMode)}>
+            Route
+          </button>
+          <button onClick={() => setShowSites((v) => !v)} style={bottomToggleWrapS}>
+            <span style={switchS(showSites)}><span style={switchKnobS(showSites)} /></span>
+            Sites
+          </button>
+          <button onClick={() => setShowLabels((v) => !v)} style={bottomToggleWrapS}>
+            <span style={switchS(showLabels)}><span style={switchKnobS(showLabels)} /></span>
+            Labels
+          </button>
+          <button onClick={() => setShowAnomaly((v) => !v)} style={bottomToggleWrapS}>
+            <span style={switchS(showAnomaly)}><span style={switchKnobS(showAnomaly)} /></span>
+            Anomaly
+          </button>
+          <button onClick={() => setShowKK7((v) => !v)} style={bottomToggleWrapS}>
+            <span style={switchS(showKK7)}><span style={switchKnobS(showKK7)} /></span>
+            KK7
+          </button>
+          <button onClick={() => setShowAirspace((v) => !v)} style={bottomToggleWrapS}>
+            <span style={switchS(showAirspace)}><span style={switchKnobS(showAirspace)} /></span>
+            Airspace
+          </button>
+          <button onClick={() => igcInputRef.current?.click()} style={bottomNavBtnS(false)}>
+            Import IGC
+          </button>
+          {igcTrack.length > 0 && (
+            <button onClick={() => setShowIgcTrack((v) => !v)} style={bottomToggleWrapS}>
+              <span style={switchS(showIgcTrack)}><span style={switchKnobS(showIgcTrack)} /></span>
+              Track
+            </button>
+          )}
+        </div>
+
+        {igcFileName && (
+          <div
+            style={{
+              marginTop: 6,
+              padding: "7px 10px",
+              background: "rgba(255,255,255,0.03)",
+              borderRadius: 8,
+              fontSize: 10,
+              color: "#9fb4c9",
+            }}
+          >
+            IGC loaded: <b>{igcFileName}</b> · {igcTrack.length.toLocaleString()} points
+          </div>
+        )}
 
         <div style={{ display: "flex", gap: 5, marginTop: 5, flexWrap: "wrap" }}>
           <div style={pnlS}>
@@ -1502,4 +1589,82 @@ const pnlT = {
   fontWeight: 700,
   color: "#6699bb",
   letterSpacing: 0.5,
+};
+
+
+const switchS = (active = false) => ({
+  width: 38,
+  height: 22,
+  borderRadius: 999,
+  background: active ? "#8fd14f" : "rgba(255,255,255,0.14)",
+  position: "relative",
+  transition: "all 0.2s ease",
+  display: "inline-block",
+  flexShrink: 0,
+});
+
+const switchKnobS = (active = false) => ({
+  position: "absolute",
+  top: 3,
+  left: active ? 19 : 3,
+  width: 16,
+  height: 16,
+  borderRadius: "50%",
+  background: "#fff",
+  transition: "all 0.2s ease",
+});
+
+const bottomToggleWrapS = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  padding: "8px 10px",
+  borderRadius: 12,
+  border: "1px solid rgba(255,255,255,0.06)",
+  background: "rgba(255,255,255,0.03)",
+  color: "#d7e2f0",
+  cursor: "pointer",
+  fontSize: 12,
+  fontWeight: 700,
+};
+
+const bottomNavBtnS = (active = false) => ({
+  padding: "8px 12px",
+  borderRadius: 12,
+  border: "1px solid rgba(255,255,255,0.06)",
+  background: active ? "rgba(143,209,79,0.18)" : "rgba(255,255,255,0.03)",
+  color: active ? "#c8f08c" : "#d7e2f0",
+  cursor: "pointer",
+  fontSize: 12,
+  fontWeight: 700,
+});
+
+const plannerStatBoxS = {
+  minWidth: 110,
+  padding: "8px 10px",
+  borderRadius: 8,
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.05)",
+};
+
+const plannerStatLabelS = {
+  fontSize: 10,
+  opacity: 0.6,
+};
+
+const plannerStatValueS = {
+  fontSize: 18,
+  fontWeight: 800,
+  color: "#e6eef8",
+};
+
+const panelCloseBtnS = {
+  width: 28,
+  height: 28,
+  borderRadius: 999,
+  border: "1px solid rgba(255,255,255,0.08)",
+  background: "rgba(255,255,255,0.04)",
+  color: "#d7e2f0",
+  cursor: "pointer",
+  fontWeight: 700,
 };
