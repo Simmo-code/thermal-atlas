@@ -154,12 +154,13 @@ function bearing(lat1, lon1, lat2, lon2) {
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
-function hotspotColor(cell, thresholdMode) {
+function hotspotStyle(cell, thresholdMode) {
   if (thresholdMode === "hot3") {
-    return cell.hot3 ? "rgba(255, 40, 20, 0.75)" : null;
+    if (!cell.hot3) return null;
+    return { color: "#ff2814", alpha: 0.42 };
   }
-  if (cell.hot3) return "rgba(255, 30, 10, 0.8)";
-  if (cell.hot2) return "rgba(255, 160, 30, 0.6)";
+  if (cell.hot3) return { color: "#ff1e0a", alpha: 0.48 };
+  if (cell.hot2) return { color: "#ffa01e", alpha: 0.28 };
   return null;
 }
 
@@ -183,7 +184,11 @@ export default function ThermalAtlasPro() {
   const canvasRef = useRef(null);
   const tileCache = useRef({});
   const activePointers = useRef(new Map());
-  const pinchState = useRef({ startDist: null, startZoom: null });
+  const pinchState = useRef({
+    startDist: null,
+    startZoom: null,
+    lastStepZoom: null,
+  });
 
   const [zoom, setZoom] = useState(8);
   const [center, setCenter] = useState(MAP_CENTER);
@@ -238,7 +243,8 @@ export default function ThermalAtlasPro() {
       });
   }, []);
 
-  const s = Math.pow(2, zoom);
+  const zoomInt = Math.round(zoom);
+  const s = Math.pow(2, zoomInt);
   const cwx = ((center.lon + 180) / 360) * s * TS;
   const cwy =
     ((1 -
@@ -303,7 +309,6 @@ export default function ThermalAtlasPro() {
         })()
       : null;
 
-  // ---- DRAW ----
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -321,10 +326,10 @@ export default function ThermalAtlasPro() {
         const py = ty * TS - oy;
 
         const bu = bm.url
-          .replace("{z}", zoom)
+          .replace("{z}", zoomInt)
           .replace("{x}", tx)
           .replace("{y}", ty);
-        const bk = `bm_${basemap}_${zoom}_${tx}_${ty}`;
+        const bk = `bm_${basemap}_${zoomInt}_${tx}_${ty}`;
         loadTile(bu, bk);
 
         if (tileCache.current[bk] instanceof Image) {
@@ -334,9 +339,9 @@ export default function ThermalAtlasPro() {
         }
 
         if (showKK7) {
-          const tmsY = Math.pow(2, zoom) - 1 - ty;
-          const kk = `kk7_${kk7Layer}_${zoom}_${tx}_${tmsY}`;
-          const ku = `https://kk7-proxy.simmo-justin.workers.dev/proxy/tiles/${kk7Layer}/${zoom}/${tx}/${tmsY}.png`;
+          const tmsY = Math.pow(2, zoomInt) - 1 - ty;
+          const kk = `kk7_${kk7Layer}_${zoomInt}_${tx}_${tmsY}`;
+          const ku = `https://kk7-proxy.simmo-justin.workers.dev/proxy/tiles/${kk7Layer}/${zoomInt}/${tx}/${tmsY}.png`;
           loadTile(ku, kk);
 
           if (tileCache.current[kk] instanceof Image) {
@@ -349,20 +354,24 @@ export default function ThermalAtlasPro() {
     }
 
     if (showAnomaly && anomalyCells.length > 0) {
-      const size = hotspotCellSize(zoom);
+      const size = hotspotCellSize(zoomInt);
+
+      ctx.save();
+      ctx.globalCompositeOperation = "source-over";
 
       for (let i = 0; i < anomalyCells.length; i++) {
         const cell = anomalyCells[i];
-        const fill = hotspotColor(cell, thresholdMode);
-        if (!fill) continue;
+        const style = hotspotStyle(cell, thresholdMode);
+        if (!style) continue;
 
-        const p = latLonToPixel(cell.lat, cell.lon, zoom, ox, oy);
+        const p = latLonToPixel(cell.lat, cell.lon, zoomInt, ox, oy);
 
         if (p.x < -size || p.x > W + size || p.y < -size || p.y > H + size) {
           continue;
         }
 
-        ctx.fillStyle = fill;
+        ctx.globalAlpha = style.alpha;
+        ctx.fillStyle = style.color;
         ctx.fillRect(
           Math.round(p.x - size / 2),
           Math.round(p.y - size / 2),
@@ -370,11 +379,14 @@ export default function ThermalAtlasPro() {
           size
         );
       }
+
+      ctx.restore();
+      ctx.globalAlpha = 1;
     }
 
     if (routePoints.length > 0) {
       const rpx = routePoints.map((rp) =>
-        latLonToPixel(rp.lat, rp.lon, zoom, ox, oy)
+        latLonToPixel(rp.lat, rp.lon, zoomInt, ox, oy)
       );
 
       if (rpx.length > 1) {
@@ -434,7 +446,7 @@ export default function ThermalAtlasPro() {
     if (showSites) {
       SITES.forEach((site) => {
         if (!selectedRegions.has(site.region)) return;
-        const p = latLonToPixel(site.lat, site.lon, zoom, ox, oy);
+        const p = latLonToPixel(site.lat, site.lon, zoomInt, ox, oy);
         if (p.x < -30 || p.x > W + 30 || p.y < -30 || p.y > H + 30) return;
 
         const hov = hoveredSite === site.name;
@@ -480,7 +492,7 @@ export default function ThermalAtlasPro() {
           ctx.fill();
         }
 
-        if (showLabels && (zoom >= 9 || hov)) {
+        if (showLabels && (zoomInt >= 9 || hov)) {
           ctx.font = hov ? "bold 11px sans-serif" : "10px sans-serif";
           ctx.fillStyle = "#fff";
           ctx.textAlign = "left";
@@ -505,7 +517,7 @@ export default function ThermalAtlasPro() {
     ctx.textAlign = "right";
     ctx.fillText(`${bm.attr} | Thermals © thermal.kk7.ch CC-BY-NC-SA`, W - 8, H - 6);
   }, [
-    zoom,
+    zoomInt,
     center,
     basemap,
     showKK7,
@@ -530,7 +542,6 @@ export default function ThermalAtlasPro() {
     H,
   ]);
 
-  // ---- MOUSE ----
   const handleMouseDown = (e) => {
     if (!routeMode) {
       setIsDragging(true);
@@ -552,7 +563,7 @@ export default function ThermalAtlasPro() {
       const dx = e.clientX - dragStart.x;
       const dy = e.clientY - dragStart.y;
       const sr = W / rect.width;
-      const ws = Math.pow(2, zoom) * TS;
+      const ws = Math.pow(2, zoomInt) * TS;
 
       setCenter({
         lat: Math.max(50, Math.min(53, dragStart.lat + ((dy * sr) / ws) * 180)),
@@ -564,7 +575,7 @@ export default function ThermalAtlasPro() {
     let found = null;
     SITES.forEach((si) => {
       if (!selectedRegions.has(si.region)) return;
-      const p = latLonToPixel(si.lat, si.lon, zoom, ox, oy);
+      const p = latLonToPixel(si.lat, si.lon, zoomInt, ox, oy);
       if (Math.sqrt((mx - p.x) ** 2 + (my - p.y) ** 2) < 12) found = si.name;
     });
     setHoveredSite(found);
@@ -580,7 +591,7 @@ export default function ThermalAtlasPro() {
     const rect = canvasRef.current.getBoundingClientRect();
     const mx = (e.clientX - rect.left) * (W / rect.width);
     const my = (e.clientY - rect.top) * (H / rect.height);
-    setRoutePoints((prev) => [...prev, pixelToLatLon(mx, my, zoom, ox, oy)]);
+    setRoutePoints((prev) => [...prev, pixelToLatLon(mx, my, zoomInt, ox, oy)]);
   };
 
   const handleWheel = (e) => {
@@ -588,10 +599,10 @@ export default function ThermalAtlasPro() {
     const rect = canvasRef.current.getBoundingClientRect();
     const mx = (e.clientX - rect.left) * (W / rect.width);
     const my = (e.clientY - rect.top) * (H / rect.height);
-    const nz = e.deltaY < 0 ? Math.min(zoom + 1, 13) : Math.max(zoom - 1, 6);
-    if (nz === zoom) return;
+    const nz = e.deltaY < 0 ? Math.min(zoomInt + 1, 13) : Math.max(zoomInt - 1, 6);
+    if (nz === zoomInt) return;
 
-    const r = Math.pow(2, nz) / Math.pow(2, zoom);
+    const r = Math.pow(2, nz) / Math.pow(2, zoomInt);
     const nwx = (ox + mx) * r - mx + W / 2;
     const nwy = (oy + my) * r - my + H / 2;
     const ns = Math.pow(2, nz) * TS;
@@ -608,7 +619,6 @@ export default function ThermalAtlasPro() {
     });
   };
 
-  // ---- POINTER / TOUCH ----
   const handlePointerDown = useCallback(
     (e) => {
       const canvas = canvasRef.current;
@@ -637,10 +647,11 @@ export default function ThermalAtlasPro() {
         setIsDragging(false);
         setDragStart(null);
         pinchState.current.startDist = distanceBetweenTouches(pts[0], pts[1]);
-        pinchState.current.startZoom = zoom;
+        pinchState.current.startZoom = zoomInt;
+        pinchState.current.lastStepZoom = zoomInt;
       }
     },
-    [center.lat, center.lon, routeMode, zoom]
+    [center.lat, center.lon, routeMode, zoomInt]
   );
 
   const handlePointerMove = useCallback(
@@ -659,12 +670,20 @@ export default function ThermalAtlasPro() {
 
       if (pts.length === 2) {
         e.preventDefault();
+
         const dist = distanceBetweenTouches(pts[0], pts[1]);
-        if (pinchState.current.startDist && pinchState.current.startZoom !== null) {
-          const scaleFactor = dist / pinchState.current.startDist;
+        const startDist = pinchState.current.startDist;
+        const startZoom = pinchState.current.startZoom;
+
+        if (startDist && startZoom !== null) {
+          const scaleFactor = dist / startDist;
           const zoomDelta = Math.log2(scaleFactor);
-          const nextZoom = Math.max(6, Math.min(13, pinchState.current.startZoom + zoomDelta));
-          setZoom(nextZoom);
+          const steppedZoom = Math.max(6, Math.min(13, Math.round(startZoom + zoomDelta)));
+
+          if (steppedZoom !== pinchState.current.lastStepZoom) {
+            pinchState.current.lastStepZoom = steppedZoom;
+            setZoom(steppedZoom);
+          }
         }
         return;
       }
@@ -674,7 +693,7 @@ export default function ThermalAtlasPro() {
         const dx = e.clientX - dragStart.x;
         const dy = e.clientY - dragStart.y;
         const sr = W / rect.width;
-        const ws = Math.pow(2, zoom) * TS;
+        const ws = Math.pow(2, zoomInt) * TS;
 
         setCenter({
           lat: Math.max(50, Math.min(53, dragStart.lat + ((dy * sr) / ws) * 180)),
@@ -686,44 +705,41 @@ export default function ThermalAtlasPro() {
       let found = null;
       SITES.forEach((si) => {
         if (!selectedRegions.has(si.region)) return;
-        const p = latLonToPixel(si.lat, si.lon, zoom, ox, oy);
+        const p = latLonToPixel(si.lat, si.lon, zoomInt, ox, oy);
         if (Math.sqrt((mx - p.x) ** 2 + (my - p.y) ** 2) < 12) found = si.name;
       });
       setHoveredSite(found);
     },
-    [W, H, dragStart, isDragging, ox, oy, routeMode, selectedRegions, zoom]
+    [W, H, dragStart, isDragging, ox, oy, routeMode, selectedRegions, zoomInt]
   );
 
-  const handlePointerUp = useCallback(
-    (e) => {
-      activePointers.current.delete(e.pointerId);
-      const pts = Array.from(activePointers.current.values());
+  const handlePointerUp = useCallback((e) => {
+    activePointers.current.delete(e.pointerId);
+    const pts = Array.from(activePointers.current.values());
 
-      if (pts.length < 2) {
-        pinchState.current.startDist = null;
-        pinchState.current.startZoom = null;
-      }
-
-      if (pts.length === 0) {
-        setIsDragging(false);
-        setDragStart(null);
-      }
-    },
-    []
-  );
-
-  const handlePointerCancel = useCallback(
-    (e) => {
-      activePointers.current.delete(e.pointerId);
+    if (pts.length < 2) {
       pinchState.current.startDist = null;
       pinchState.current.startZoom = null;
-      if (activePointers.current.size === 0) {
-        setIsDragging(false);
-        setDragStart(null);
-      }
-    },
-    []
-  );
+      pinchState.current.lastStepZoom = null;
+    }
+
+    if (pts.length === 0) {
+      setIsDragging(false);
+      setDragStart(null);
+    }
+  }, []);
+
+  const handlePointerCancel = useCallback((e) => {
+    activePointers.current.delete(e.pointerId);
+    pinchState.current.startDist = null;
+    pinchState.current.startZoom = null;
+    pinchState.current.lastStepZoom = null;
+
+    if (activePointers.current.size === 0) {
+      setIsDragging(false);
+      setDragStart(null);
+    }
+  }, []);
 
   const toggleRegion = (r) => {
     setSelectedRegions((p) => {
@@ -734,7 +750,6 @@ export default function ThermalAtlasPro() {
     });
   };
 
-  // ---- RENDER ----
   return (
     <div
       style={{
@@ -771,9 +786,9 @@ export default function ThermalAtlasPro() {
             </p>
           </div>
           <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-            <button onClick={() => setZoom((z) => Math.min(z + 1, 13))} style={btnS(isMobile)}>+</button>
-            <span style={{ fontSize: 11, color: "#88aacc", minWidth: 24, textAlign: "center" }}>z{Math.round(zoom * 10) / 10}</span>
-            <button onClick={() => setZoom((z) => Math.max(z - 1, 6))} style={btnS(isMobile)}>−</button>
+            <button onClick={() => setZoom((z) => Math.min(Math.round(z) + 1, 13))} style={btnS(isMobile)}>+</button>
+            <span style={{ fontSize: 11, color: "#88aacc", minWidth: 24, textAlign: "center" }}>z{zoomInt}</span>
+            <button onClick={() => setZoom((z) => Math.max(Math.round(z) - 1, 6))} style={btnS(isMobile)}>−</button>
           </div>
         </div>
 
@@ -1076,9 +1091,9 @@ export default function ThermalAtlasPro() {
           <div style={pnlS}>
             <div style={pnlT}>ANOMALY HOTSPOTS</div>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3, flexWrap: "wrap" }}>
-              <div style={{ width: 12, height: 8, background: "rgba(255,160,30,0.7)", borderRadius: 2 }} />
+              <div style={{ width: 12, height: 8, background: "rgba(255,160,30,0.28)", borderRadius: 2 }} />
               <span style={{ fontSize: 8, opacity: 0.65 }}>+2°C candidate</span>
-              <div style={{ width: 12, height: 8, background: "rgba(255,30,10,0.8)", borderRadius: 2, marginLeft: 8 }} />
+              <div style={{ width: 12, height: 8, background: "rgba(255,30,10,0.48)", borderRadius: 2, marginLeft: 8 }} />
               <span style={{ fontSize: 8, opacity: 0.65 }}>+3°C strong trigger</span>
             </div>
             <div style={{ fontSize: 8, opacity: 0.45, marginTop: 2 }}>
