@@ -301,6 +301,7 @@ export default function ThermalAtlasPro() {
   });
   const routeDragIndexRef = useRef(null);
   const routeDragMovedRef = useRef(false);
+  const gpsWatchRef = useRef(null);
 
   const [zoom, setZoom] = useState(8);
   const [center, setCenter] = useState(MAP_CENTER);
@@ -330,6 +331,13 @@ export default function ThermalAtlasPro() {
   const [igcTrack, setIgcTrack] = useState([]);
   const [igcFileName, setIgcFileName] = useState("");
   const [showIgcTrack, setShowIgcTrack] = useState(true);
+  const [gpsEnabled, setGpsEnabled] = useState(false);
+  const [gpsPosition, setGpsPosition] = useState(null);
+  const [gpsError, setGpsError] = useState("");
+  const [showPlannerPanel, setShowPlannerPanel] = useState(false);
+  const [igcTrack, setIgcTrack] = useState([]);
+  const [igcFileName, setIgcFileName] = useState("");
+  const [showIgcTrack, setShowIgcTrack] = useState(true);
   const igcInputRef = useRef(null);
 
   const [viewportWidth, setViewportWidth] = useState(
@@ -346,6 +354,52 @@ export default function ThermalAtlasPro() {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+
+  useEffect(() => {
+    if (!gpsEnabled) {
+      if (gpsWatchRef.current !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(gpsWatchRef.current);
+        gpsWatchRef.current = null;
+      }
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      setGpsError("Geolocation not supported on this device/browser.");
+      setGpsEnabled(false);
+      return;
+    }
+
+    setGpsError("");
+
+    gpsWatchRef.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        const next = {
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+          acc: pos.coords.accuracy,
+        };
+        setGpsPosition(next);
+        setCenter({ lat: next.lat, lon: next.lon });
+      },
+      (err) => {
+        setGpsError(err.message || "Unable to get GPS position.");
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+        timeout: 15000,
+      }
+    );
+
+    return () => {
+      if (gpsWatchRef.current !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(gpsWatchRef.current);
+        gpsWatchRef.current = null;
+      }
+    };
+  }, [gpsEnabled]);
 
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}data/anomaly_grid.json`)
@@ -706,6 +760,29 @@ export default function ThermalAtlasPro() {
       });
     }
 
+    if (gpsPosition) {
+      const p = latLonToPixel(gpsPosition.lat, gpsPosition.lon, zoomInt, ox, oy);
+
+      if (p.x > -40 && p.x < W + 40 && p.y > -40 && p.y < H + 40) {
+        ctx.save();
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, isMobile ? 14 : 12, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(80,160,255,0.18)";
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, isMobile ? 7 : 6, 0, Math.PI * 2);
+        ctx.fillStyle = "#4da3ff";
+        ctx.fill();
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.restore();
+      }
+    }
+
     ctx.font = "9px sans-serif";
     ctx.fillStyle = "rgba(255,255,255,0.35)";
     ctx.textAlign = "right";
@@ -736,6 +813,7 @@ export default function ThermalAtlasPro() {
     selectedAirspace,
     igcTrack,
     showIgcTrack,
+    gpsPosition,
     loadTile,
     W,
     H,
@@ -1422,6 +1500,10 @@ export default function ThermalAtlasPro() {
           <button onClick={() => igcInputRef.current?.click()} style={bottomNavBtnS(false)}>
             Import IGC
           </button>
+          <button onClick={() => setGpsEnabled((v) => !v)} style={bottomToggleWrapS}>
+            <span style={switchS(gpsEnabled)}><span style={switchKnobS(gpsEnabled)} /></span>
+            GPS
+          </button>
           {igcTrack.length > 0 && (
             <button onClick={() => setShowIgcTrack((v) => !v)} style={bottomToggleWrapS}>
               <span style={switchS(showIgcTrack)}><span style={switchKnobS(showIgcTrack)} /></span>
@@ -1442,6 +1524,25 @@ export default function ThermalAtlasPro() {
             }}
           >
             IGC loaded: <b>{igcFileName}</b> · {igcTrack.length.toLocaleString()} points
+          </div>
+        )}
+
+        {(gpsEnabled || gpsError) && (
+          <div
+            style={{
+              marginTop: 6,
+              padding: "7px 10px",
+              background: "rgba(255,255,255,0.03)",
+              borderRadius: 8,
+              fontSize: 10,
+              color: gpsError ? "#ffb0a8" : "#9fb4c9",
+            }}
+          >
+            {gpsError
+              ? `GPS error: ${gpsError}`
+              : gpsPosition
+              ? `GPS live: ${gpsPosition.lat.toFixed(5)}, ${gpsPosition.lon.toFixed(5)}`
+              : "Waiting for GPS position..."}
           </div>
         )}
 
