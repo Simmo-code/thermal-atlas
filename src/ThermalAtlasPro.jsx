@@ -302,6 +302,7 @@ export default function ThermalAtlasPro() {
   const routeDragIndexRef = useRef(null);
   const routeDragMovedRef = useRef(false);
   const gpsWatchRef = useRef(null);
+  const lastGpsRef = useRef(null);
 
   const [zoom, setZoom] = useState(8);
   const [center, setCenter] = useState(MAP_CENTER);
@@ -334,6 +335,7 @@ export default function ThermalAtlasPro() {
   const [gpsEnabled, setGpsEnabled] = useState(false);
   const [gpsPosition, setGpsPosition] = useState(null);
   const [gpsError, setGpsError] = useState("");
+  const [gpsHeading, setGpsHeading] = useState(null);
   const igcInputRef = useRef(null);
 
   const [viewportWidth, setViewportWidth] = useState(
@@ -358,6 +360,8 @@ export default function ThermalAtlasPro() {
         navigator.geolocation.clearWatch(gpsWatchRef.current);
         gpsWatchRef.current = null;
       }
+      lastGpsRef.current = null;
+      setGpsHeading(null);
       return;
     }
 
@@ -377,8 +381,24 @@ export default function ThermalAtlasPro() {
           lon: pos.coords.longitude,
           acc: pos.coords.accuracy,
         };
+
+        let nextHeading = null;
+
+        if (Number.isFinite(pos.coords.heading) && pos.coords.heading >= 0) {
+          nextHeading = pos.coords.heading;
+        } else if (lastGpsRef.current) {
+          const prev = lastGpsRef.current;
+          const movedEnough =
+            Math.abs(prev.lat - next.lat) > 0.00005 || Math.abs(prev.lon - next.lon) > 0.00005;
+          if (movedEnough) {
+            nextHeading = bearing(prev.lat, prev.lon, next.lat, next.lon);
+          }
+        }
+
+        lastGpsRef.current = next;
         setGpsPosition(next);
         setCenter({ lat: next.lat, lon: next.lon });
+        if (nextHeading !== null) setGpsHeading(nextHeading);
       },
       (err) => {
         setGpsError(err.message || "Unable to get GPS position.");
@@ -515,6 +535,15 @@ export default function ThermalAtlasPro() {
     ctx.fillRect(0, 0, W, H);
 
     const bm = BASEMAPS[basemap];
+    const mapRotationRad =
+      gpsEnabled && gpsHeading !== null ? (-gpsHeading * Math.PI) / 180 : 0;
+
+    ctx.save();
+    if (mapRotationRad !== 0) {
+      ctx.translate(W / 2, H / 2);
+      ctx.rotate(mapRotationRad);
+      ctx.translate(-W / 2, -H / 2);
+    }
 
     for (let tx = txs; tx <= txe; tx++) {
       for (let ty = tys; ty <= tye; ty++) {
@@ -780,6 +809,52 @@ export default function ThermalAtlasPro() {
       }
     }
 
+    ctx.restore();
+
+    if (gpsEnabled && gpsHeading !== null) {
+      const cx = W - 54;
+      const cy = 54;
+      const r = 24;
+
+      ctx.save();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(18,28,44,0.82)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.25)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.translate(cx, cy);
+      ctx.rotate((gpsHeading * Math.PI) / 180);
+
+      ctx.beginPath();
+      ctx.moveTo(0, -16);
+      ctx.lineTo(5, -5);
+      ctx.lineTo(0, -8);
+      ctx.lineTo(-5, -5);
+      ctx.closePath();
+      ctx.fillStyle = "#ff5a5a";
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(0, 16);
+      ctx.lineTo(4, 5);
+      ctx.lineTo(-4, 5);
+      ctx.closePath();
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      ctx.fill();
+
+      ctx.restore();
+
+      ctx.font = "bold 10px sans-serif";
+      ctx.fillStyle = "#d7e2f0";
+      ctx.textAlign = "center";
+      ctx.fillText(`${Math.round(gpsHeading)}°`, cx, cy + 38);
+      ctx.fillText("N", cx, cy - 31);
+    }
+
     ctx.font = "9px sans-serif";
     ctx.fillStyle = "rgba(255,255,255,0.35)";
     ctx.textAlign = "right";
@@ -811,6 +886,8 @@ export default function ThermalAtlasPro() {
     igcTrack,
     showIgcTrack,
     gpsPosition,
+    gpsHeading,
+    gpsEnabled,
     loadTile,
     W,
     H,
@@ -1545,7 +1622,7 @@ export default function ThermalAtlasPro() {
             {gpsError
               ? `GPS error: ${gpsError}`
               : gpsPosition
-              ? `GPS live: ${gpsPosition.lat.toFixed(5)}, ${gpsPosition.lon.toFixed(5)}`
+              ? `GPS live: ${gpsPosition.lat.toFixed(5)}, ${gpsPosition.lon.toFixed(5)}${gpsHeading !== null ? ` · ${Math.round(gpsHeading)}°` : ""}`
               : "Waiting for GPS position..."}
           </div>
         )}
