@@ -45,6 +45,8 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -- analysis/four_marks_gis/run_analysis.py
+          git pull --rebase origin gis-four-marks-v2-20260804
           git add analysis/four_marks_gis/output_v2 analysis/four_marks_gis/run_v2.log analysis/four_marks_gis/four_marks_gis_results_v2.zip
           git diff --cached --quiet || git commit -m 'Add final Four Marks v2 GIS results [gis-output]'
           git push
