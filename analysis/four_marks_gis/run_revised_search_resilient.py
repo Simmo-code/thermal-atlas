@@ -8,7 +8,72 @@ marker = "out=Path('/tmp/run_analysis_revised.py')"
 if marker not in wrapper:
     raise SystemExit("Could not locate revised-script output marker")
 
-injection = '# Make Environment Agency WCS access resilient to temporary throttling.\ns=s.replace("import json, math, os, re, shutil, time", "import json, math, os, re, shutil, time, random, threading")\ngate_marker="FOUR_E,FOUR_N=TO_BNG.transform(FOUR_LON,FOUR_LAT)\\n"\ngate_code="""FOUR_E,FOUR_N=TO_BNG.transform(FOUR_LON,FOUR_LAT)\n_WCS_GATE=threading.Lock()\n_WCS_LAST=[0.0]\n\ndef wcs_throttle(min_gap=5.0):\n    with _WCS_GATE:\n        elapsed=time.monotonic()-_WCS_LAST[0]\n        if elapsed<min_gap:\n            time.sleep(min_gap-elapsed)\n        _WCS_LAST[0]=time.monotonic()\n"""\nif gate_marker not in s:\n    raise SystemExit("WCS gate insertion point not found")\ns=s.replace(gate_marker,gate_code)\ns=s.replace("def download(bounds,scale,path,retries=5):", "def download(bounds,scale,path,retries=15):")\nrequest_marker="            with requests.get(wcs_url(bounds,scale),headers=headers,stream=True,timeout=(60,1800)) as r:\\n"\nrequest_code="""            wcs_throttle()\n            with requests.get(wcs_url(bounds,scale),headers=headers,stream=True,timeout=(60,1800)) as r:\n"""\nif request_marker not in s:\n    raise SystemExit("WCS request insertion point not found")\ns=s.replace(request_marker,request_code)\nold_except="""        except Exception as ex:\n            err=ex; path.with_suffix(\'.part\').unlink(missing_ok=True); time.sleep(min(30,2**i))\n"""\nnew_except="""        except Exception as ex:\n            err=ex\n            path.with_suffix(\'.part\').unlink(missing_ok=True)\n            response=getattr(ex,\'response\',None)\n            retry_after=response.headers.get(\'Retry-After\') if response is not None else None\n            try:\n                delay=float(retry_after) if retry_after else min(300.0,15.0*(i+1))\n            except (TypeError,ValueError):\n                delay=min(300.0,15.0*(i+1))\n            delay+=random.uniform(0.0,3.0)\n            log(f\'WCS attempt {i+1}/{retries} failed for {bounds} scale={scale}: {ex}; retrying in {delay:.0f}s\')\n            time.sleep(delay)\n"""\nif old_except not in s:\n    raise SystemExit("WCS retry block not found")\ns=s.replace(old_except,new_except)\ns=s.replace("with cf.ThreadPoolExecutor(max_workers=6) as ex:", "with cf.ThreadPoolExecutor(max_workers=2) as ex:")\ns=s.replace("with cf.ThreadPoolExecutor(max_workers=4) as ex:", "with cf.ThreadPoolExecutor(max_workers=2) as ex:")\n'
+injection = r'''# Make Environment Agency WCS access resilient and keep the exact stage within the runner limit.
+s=s.replace("import json, math, os, re, shutil, time", "import json, math, os, re, shutil, time, random, threading")
+gate_marker="FOUR_E,FOUR_N=TO_BNG.transform(FOUR_LON,FOUR_LAT)\n"
+gate_code="""FOUR_E,FOUR_N=TO_BNG.transform(FOUR_LON,FOUR_LAT)
+_WCS_GATE=threading.Lock()
+_WCS_LAST=[0.0]
+
+def wcs_throttle(min_gap=5.0):
+    with _WCS_GATE:
+        elapsed=time.monotonic()-_WCS_LAST[0]
+        if elapsed<min_gap:
+            time.sleep(min_gap-elapsed)
+        _WCS_LAST[0]=time.monotonic()
+"""
+if gate_marker not in s:
+    raise SystemExit("WCS gate insertion point not found")
+s=s.replace(gate_marker,gate_code)
+s=s.replace("def download(bounds,scale,path,retries=5):", "def download(bounds,scale,path,retries=15):")
+request_marker="            with requests.get(wcs_url(bounds,scale),headers=headers,stream=True,timeout=(60,1800)) as r:\n"
+request_code="""            wcs_throttle()
+            with requests.get(wcs_url(bounds,scale),headers=headers,stream=True,timeout=(60,1800)) as r:
+"""
+if request_marker not in s:
+    raise SystemExit("WCS request insertion point not found")
+s=s.replace(request_marker,request_code)
+old_except="""        except Exception as ex:
+            err=ex; path.with_suffix('.part').unlink(missing_ok=True); time.sleep(min(30,2**i))
+"""
+new_except="""        except Exception as ex:
+            err=ex
+            path.with_suffix('.part').unlink(missing_ok=True)
+            response=getattr(ex,'response',None)
+            retry_after=response.headers.get('Retry-After') if response is not None else None
+            try:
+                delay=float(retry_after) if retry_after else min(300.0,15.0*(i+1))
+            except (TypeError,ValueError):
+                delay=min(300.0,15.0*(i+1))
+            delay+=random.uniform(0.0,3.0)
+            log(f'WCS attempt {i+1}/{retries} failed for {bounds} scale={scale}: {ex}; retrying in {delay:.0f}s')
+            time.sleep(delay)
+"""
+if old_except not in s:
+    raise SystemExit("WCS retry block not found")
+s=s.replace(old_except,new_except)
+
+# The previous run passed source and benchmark in the wrong order. That made b a string
+# and caused: string indices must be integers, not 'str'.
+wrong_call="futures=[ex.submit(exact_assess,*j,b) for j in jobs]"
+right_call="futures=[ex.submit(exact_assess,j[0],j[1],j[2],b,j[3]) for j in jobs]"
+if wrong_call not in s:
+    raise SystemExit("Exact verification call site not found")
+s=s.replace(wrong_call,right_call)
+
+# A 3 km exact window already examines terrain up to 1.3 km from its centre. Cluster
+# coarse hits at 1.2 km rather than 0.5 km so overlapping windows are not downloaded
+# hundreds of times. The highest-scoring coarse hit in each cluster is retained.
+s=s.replace("<500 for q in keep", "<1200 for q in keep")
+
+# Keep WCS traffic gentle while allowing raster processing to overlap.
+s=s.replace("with cf.ThreadPoolExecutor(max_workers=6) as ex:", "with cf.ThreadPoolExecutor(max_workers=2) as ex:")
+s=s.replace("with cf.ThreadPoolExecutor(max_workers=4) as ex:", "with cf.ThreadPoolExecutor(max_workers=3) as ex:")
+
+# Make the reduced exact workload explicit in the log.
+s=s.replace("faces=[]\n    with cf.ThreadPoolExecutor(max_workers=3) as ex:", "log(f'Exact verification jobs after 1.2 km clustering: {len(jobs)}')\n    faces=[]\n    with cf.ThreadPoolExecutor(max_workers=3) as ex:")
+'''
+
 wrapper = wrapper.replace(marker, injection + "\n" + marker)
 temp_wrapper = Path("/tmp/run_revised_search_resilient_wrapper.py")
 temp_wrapper.write_text(wrapper)
