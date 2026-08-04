@@ -33,9 +33,16 @@ jobs:
         run: |
           set -euxo pipefail
           rm -rf analysis/four_marks_gis/output_v2 analysis/four_marks_gis/run_v2.log analysis/four_marks_gis/four_marks_gis_results_v2.zip
+          # Constrain Whitewool to the club's actual 020-100 degree face.
           sed -i 's/dist<800/dist<600/' analysis/four_marks_gis/run_analysis.py
           sed -i 's/dist<(850 if white/dist<(650 if white/' analysis/four_marks_gis/run_analysis.py
           sed -i 's/np.arange(0,360,5)/np.arange(20,101,5)/' analysis/four_marks_gis/run_analysis.py
+          # exact_assess signature is (name, easting, northing, benchmark, source).
+          sed -i 's/futures=\[ex.submit(exact_assess,\*j,b) for j in jobs\]/futures=[ex.submit(exact_assess,j[0],j[1],j[2],b,j[3]) for j in jobs]/' analysis/four_marks_gis/run_analysis.py
+          # Use six independent WCS verification workers and avoid redundant OSM checks for already-failed named sites.
+          sed -i 's/with cf.ThreadPoolExecutor(max_workers=4) as ex:/with cf.ThreadPoolExecutor(max_workers=6) as ex:/' analysis/four_marks_gis/run_analysis.py
+          sed -i "s/if f.pass_terrain or f.source=='Required reassessment':osm_check(f)/if f.pass_terrain:osm_check(f)/" analysis/four_marks_gis/run_analysis.py
+          grep -F "ex.submit(exact_assess,j[0],j[1],j[2],b,j[3])" analysis/four_marks_gis/run_analysis.py
           python -m py_compile analysis/four_marks_gis/run_analysis.py analysis/four_marks_gis/run_v2.py
           python analysis/four_marks_gis/run_v2.py 2>&1 | tee analysis/four_marks_gis/run_v2.log
           cp analysis/four_marks_gis/run_v2.py analysis/four_marks_gis/output_v2/run_v2.py
@@ -47,6 +54,6 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git checkout -- analysis/four_marks_gis/run_analysis.py
           git pull --rebase origin gis-four-marks-v2-20260804
-          git add analysis/four_marks_gis/output_v2 analysis/four_marks_gis/run_v2.log analysis/four_marks_gis/four_marks_gis_results_v2.zip
+          git add -f analysis/four_marks_gis/output_v2 analysis/four_marks_gis/run_v2.log analysis/four_marks_gis/four_marks_gis_results_v2.zip
           git diff --cached --quiet || git commit -m 'Add final Four Marks v2 GIS results [gis-output]'
           git push
