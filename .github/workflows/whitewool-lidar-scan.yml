@@ -1,0 +1,54 @@
+name: Whitewool LiDAR terrain scan
+
+on:
+  push:
+    branches:
+      - analysis/whitewool-lidar-scan
+    paths:
+      - analysis/whitewool_lidar_scan.py
+      - analysis/whitewool_lidar_requirements.txt
+      - .github/workflows/whitewool-lidar-scan.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: whitewool-lidar-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: analysis/whitewool_lidar_requirements.txt
+      - name: Install terrain-analysis dependencies
+        run: python -m pip install -r analysis/whitewool_lidar_requirements.txt
+      - name: Run 30-mile Whitewool-threshold scan
+        run: |
+          python analysis/whitewool_lidar_scan.py \
+            --output whitewool_scan_output \
+            --radius-miles 30 \
+            --profile-length 200 \
+            --coarse-resolution 10 \
+            --tile-size 6000 \
+            --tile-overlap 400 \
+            --workers 4 \
+            --max-native 50
+      - name: Remove downloaded raster cache from results
+        if: always()
+        run: rm -rf whitewool_scan_output/cache
+      - name: Upload scan outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: whitewool-lidar-scan-results
+          path: whitewool_scan_output
+          if-no-files-found: warn
+          retention-days: 14
