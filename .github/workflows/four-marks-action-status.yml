@@ -1,0 +1,35 @@
+name: Four Marks workflow status
+
+on:
+  push:
+    branches:
+      - gis-four-marks-v2-20260804
+    paths:
+      - '.github/workflows/four-marks-action-status.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gis-four-marks-v2-20260804
+      - name: Record workflow runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p analysis/four_marks_gis/status
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs?per_page=100" --jq '[.workflow_runs[] | select(.name | contains("Four Marks") or contains("Pidham") or contains("Whitewool")) | {id,name,status,conclusion,head_branch,head_sha,created_at,updated_at,run_number,event,html_url}]' > analysis/four_marks_gis/status/workflow_runs.json
+      - name: Commit status
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git pull --rebase origin gis-four-marks-v2-20260804
+          git add analysis/four_marks_gis/status/workflow_runs.json
+          git diff --cached --quiet || git commit -m 'Record Four Marks workflow status [gis-output]'
+          git push
