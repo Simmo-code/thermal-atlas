@@ -29,6 +29,7 @@ jobs:
         env:
           GIS_OUTPUT: analysis/four_marks_gis/output_v2
           GIS_CACHE: /tmp/four_marks_v2_cache
+          PYTHONPATH: ${{ github.workspace }}
         run: |
           set -euxo pipefail
           rm -rf analysis/four_marks_gis/output_v2 analysis/four_marks_gis/run_v2.log analysis/four_marks_gis/four_marks_gis_results_v2.zip
