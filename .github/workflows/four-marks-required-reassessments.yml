@@ -1,0 +1,82 @@
+name: Four Marks required named reassessments
+
+on:
+  push:
+    branches:
+      - gis-four-marks-v2-20260804
+    paths:
+      - '.github/workflows/four-marks-required-reassessments.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gis-four-marks-v2-20260804
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install GIS dependencies
+        run: python -m pip install numpy pandas requests rasterio scipy pyproj shapely folium matplotlib
+      - name: Verify every required named location from original 1 m DTM
+        run: |
+          set -euxo pipefail
+          sed -i 's/dist<800/dist<600/' analysis/four_marks_gis/run_analysis.py
+          sed -i 's/dist<(850 if white/dist<(650 if white/' analysis/four_marks_gis/run_analysis.py
+          sed -i 's/np.arange(0,360,5)/np.arange(20,101,5)/' analysis/four_marks_gis/run_analysis.py
+          rm -rf analysis/four_marks_gis/required_reassessments
+          python - <<'PY'
+          from pathlib import Path
+          import concurrent.futures as cf
+          import json, math
+          import pandas as pd
+          from dataclasses import asdict
+          import analysis.four_marks_gis.run_analysis as r
+          r.OUT=Path('analysis/four_marks_gis/required_reassessments')
+          r.CACHE=Path('/tmp/four_marks_required_cache')
+          r.OUT.mkdir(parents=True,exist_ok=True);(r.OUT/'profiles').mkdir(exist_ok=True)
+          benchmark,face,tr,res=r.benchmark_whitewool()
+          jobs=[]
+          requested={}
+          for name,(lat,lon) in r.FORCED_WGS.items():
+              e,n=r.TO_BNG.transform(lon,lat);requested[name]=(e,n,lat,lon);jobs.append((name,e,n,benchmark,'Required reassessment'))
+          results=[]
+          with cf.ThreadPoolExecutor(max_workers=4) as ex:
+              future_map={ex.submit(r.exact_assess,*job):job[0] for job in jobs}
+              for fut in cf.as_completed(future_map):
+                  name=future_map[fut]
+                  try:results.append(fut.result())
+                  except Exception as exc:
+                      e,n,lat,lon=requested[name]
+                      results.append(r.Face(source='Required reassessment',name=name,status='Verification failed',easting=e,northing=n,latitude=lat,longitude=lon,grid_ref=r.gridref(e,n),distance_miles=math.hypot(e-r.FOUR_E,n-r.FOUR_N)/1609.344,confidence='Low',reason=f'One-metre verification failed: {exc}'))
+          rows=[]
+          for f in results:
+              re, rn, rlat, rlon=requested[f.name]
+              shift=math.hypot(f.easting-re,f.northing-rn)
+              row=asdict(f);row['requested_easting']=re;row['requested_northing']=rn;row['requested_latitude']=rlat;row['requested_longitude']=rlon;row['measurement_shift_m']=shift
+              if shift>700 and f.pass_terrain:
+                  row['named_location_pass']=False
+                  row['named_location_note']=f'The algorithm found a stronger face {shift:.0f} m from the requested point; this is a nearby-face result, not proof that the named location passes.'
+              else:
+                  row['named_location_pass']=bool(f.pass_terrain)
+                  row['named_location_note']='Measured face remains within 700 m of the requested survey point.'
+              rows.append(row)
+          frame=pd.DataFrame(rows).sort_values(['named_location_pass','terrain_score'],ascending=[False,False])
+          frame.to_csv(r.OUT/'required_reassessments.csv',index=False)
+          summary={'locations_requested':len(jobs),'one_metre_results':len(results),'named_locations_passing':int(frame['named_location_pass'].sum()),'nearby_face_substitutions':int(((frame['measurement_shift_m']>700)&frame['pass_terrain']).sum()),'verification_failures':int((frame['status']=='Verification failed').sum()),'whitewool_thresholds':{k:benchmark[k] for k in ['representative_slope_deg','minimum_representative_slope_deg','vertical_relief_m','minimum_relief_m','ridge_length_m','minimum_ridge_length_m','minimum_face_percentage']}}
+          (r.OUT/'summary.json').write_text(json.dumps(summary,indent=2))
+          print(summary)
+          PY
+      - name: Commit required-location results
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git pull --rebase origin gis-four-marks-v2-20260804
+          git add analysis/four_marks_gis/required_reassessments
+          git diff --cached --quiet || git commit -m 'Add required named one-metre reassessments [gis-output]'
+          git push
