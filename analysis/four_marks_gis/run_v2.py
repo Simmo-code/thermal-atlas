@@ -67,4 +67,5 @@ def process_coarse_v2(item,b):
 
 
 r.process_coarse=process_coarse_v2
-r.main()
+if __name__ == '__main__':
+    r.main()
