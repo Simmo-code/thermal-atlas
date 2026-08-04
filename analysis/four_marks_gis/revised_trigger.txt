@@ -1,0 +1,2 @@
+Triggered 2026-08-04 13:51 Europe/London
+Criteria: likely 9.5 degrees / 30 m / 400 m / 30 percent; marginal 8 degrees / 25 m / 300 m / 20 percent; thermal trigger 6 degrees / 20 m / 250 m.
