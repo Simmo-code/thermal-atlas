@@ -35,6 +35,11 @@ jobs:
         run: |
           set -euxo pipefail
           rm -rf analysis/four_marks_gis/output
+          # Whitewool's current club guide defines the real launch face as 020-100 degrees.
+          # Constrain only benchmark face identification; candidate aspects remain 135-225 degrees.
+          sed -i 's/dist<800/dist<600/' analysis/four_marks_gis/run_analysis.py
+          sed -i 's/dist<(850 if white/dist<(650 if white/' analysis/four_marks_gis/run_analysis.py
+          sed -i 's/np.arange(0,360,5)/np.arange(20,101,5)/' analysis/four_marks_gis/run_analysis.py
           python -m py_compile analysis/four_marks_gis/run_analysis.py
           python analysis/four_marks_gis/run_analysis.py 2>&1 | tee analysis/four_marks_gis/run.log
           cd analysis/four_marks_gis
