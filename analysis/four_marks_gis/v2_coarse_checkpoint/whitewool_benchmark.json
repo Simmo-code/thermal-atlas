@@ -1,0 +1,154 @@
+{
+  "aspect": 59.89410400390625,
+  "representative_slope_deg": 11.946382522583008,
+  "median_local_slope_deg": 9.807207107543945,
+  "max_robust_slope_deg": 25.289165496826172,
+  "mean_upper_slope_deg": 12.919281959533691,
+  "vertical_relief_m": 55.653743743896484,
+  "horizontal_run_m": 240.0,
+  "face_width_m": 1196.447685956955,
+  "ridge_length_m": 1196.447685956955,
+  "downslope_span_m": 532.6034016609192,
+  "connected_area_ha": 30.3968,
+  "lip_sharpness_deg": -4.335465431213379,
+  "roughness_m": 7.424655914306641,
+  "gaps_count": 0,
+  "largest_gap_m": 0,
+  "percent_face_at_benchmark": 45.22687235156882,
+  "easting": 464962.9137352464,
+  "northing": 120485.20295116377,
+  "profile_file": "profiles/whitewool_profile.png",
+  "reference_easting": 465000.0,
+  "reference_northing": 120400.0,
+  "reference_grid_ref": "SU 6500 2040",
+  "dataset": "Environment Agency LIDAR Composite DTM 1m",
+  "analysis_resolution_m": 4.0,
+  "minimum_representative_slope_deg": 11.696382522583008,
+  "minimum_relief_m": 44.52299499511719,
+  "minimum_ridge_length_m": 837.5133801698685,
+  "minimum_face_percentage": 35,
+  "methodology": "Continuous face selected automatically near SU650204 using sustained 160\u2013300 m downhill profiles; 4 m averaged DTM suppresses one-metre banks and ditches. Robust maximum is the 95th percentile local slope, not the steepest pixel.",
+  "polygon_geojson": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          464928.0,
+          121048.0
+        ],
+        [
+          464824.0,
+          121028.0
+        ],
+        [
+          464740.0,
+          120996.0
+        ],
+        [
+          464700.0,
+          120712.0
+        ],
+        [
+          464720.0,
+          120488.0
+        ],
+        [
+          464756.0,
+          120404.0
+        ],
+        [
+          464844.0,
+          120296.0
+        ],
+        [
+          465008.0,
+          120176.0
+        ],
+        [
+          465076.0,
+          120144.0
+        ],
+        [
+          465140.0,
+          120132.0
+        ],
+        [
+          465216.0,
+          119940.0
+        ],
+        [
+          465256.0,
+          119880.0
+        ],
+        [
+          465312.0,
+          119828.0
+        ],
+        [
+          465424.0,
+          119904.0
+        ],
+        [
+          465460.0,
+          119948.0
+        ],
+        [
+          465384.0,
+          120056.0
+        ],
+        [
+          465308.0,
+          120312.0
+        ],
+        [
+          465284.0,
+          120328.0
+        ],
+        [
+          465228.0,
+          120336.0
+        ],
+        [
+          465132.0,
+          120316.0
+        ],
+        [
+          465016.0,
+          120432.0
+        ],
+        [
+          464996.0,
+          120508.0
+        ],
+        [
+          464992.0,
+          120588.0
+        ],
+        [
+          464976.0,
+          120624.0
+        ],
+        [
+          464976.0,
+          120740.0
+        ],
+        [
+          464988.0,
+          120804.0
+        ],
+        [
+          465028.0,
+          120888.0
+        ],
+        [
+          465044.0,
+          121048.0
+        ],
+        [
+          464928.0,
+          121048.0
+        ]
+      ]
+    ]
+  }
+}
