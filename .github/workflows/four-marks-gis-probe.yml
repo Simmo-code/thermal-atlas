@@ -1,4 +1,4 @@
-name: Four Marks GIS WCS probe
+name: Four Marks GIS terrain analysis
 
 on:
   push:
@@ -12,48 +12,37 @@ permissions:
   contents: write
 
 jobs:
-  probe:
+  analyse:
+    if: ${{ !contains(github.event.head_commit.message, '[gis-output]') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
         with:
           ref: gis-four-marks-20260804
-      - name: Install GDAL
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install GIS dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y gdal-bin python3-gdal jq
-      - name: Download Whitewool exact and scaled probes
-        shell: bash
+          python -m pip install --upgrade pip
+          python -m pip install numpy pandas requests rasterio scipy pyproj shapely folium matplotlib
+      - name: Run Whitewool benchmark and 30-mile terrain screen
+        env:
+          GIS_OUTPUT: analysis/four_marks_gis/output
+          GIS_CACHE: /tmp/four_marks_gis_cache
         run: |
           set -euxo pipefail
-          mkdir -p analysis/four_marks_gis/probe
-          BASE='https://environment.data.gov.uk/spatialdata/lidar-composite-digital-terrain-model-dtm-1m/wcs?service=WCS&version=2.0.1&request=GetCoverage&coverageId=13787b9a-26a4-4775-8523-806d13af58fc__Lidar_Composite_Elevation_DTM_1m&subset=E(464000,466000)&subset=N(119400,121400)&format=image/tiff'
-          curl -L --fail --retry 4 --retry-all-errors --connect-timeout 30 --max-time 1200 "$BASE" -o /tmp/whitewool_exact.tif
-          curl -L --fail --retry 4 --retry-all-errors --connect-timeout 30 --max-time 1200 "${BASE}&scaleFactor=0.1" -o /tmp/whitewool_10m.tif
-          gdalinfo -json /tmp/whitewool_exact.tif > /tmp/exact.json
-          gdalinfo -json /tmp/whitewool_10m.tif > /tmp/scaled.json
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-          exact=json.loads(Path('/tmp/exact.json').read_text())
-          scaled=json.loads(Path('/tmp/scaled.json').read_text())
-          out={
-              'exact_size': exact.get('size'),
-              'exact_geoTransform': exact.get('geoTransform'),
-              'exact_file_size_bytes': Path('/tmp/whitewool_exact.tif').stat().st_size,
-              'scaled_size': scaled.get('size'),
-              'scaled_geoTransform': scaled.get('geoTransform'),
-              'scaled_file_size_bytes': Path('/tmp/whitewool_10m.tif').stat().st_size,
-              'coordinateSystem': exact.get('coordinateSystem',{}).get('wkt','')[:300],
-              'cornerCoordinates': exact.get('cornerCoordinates'),
-          }
-          Path('analysis/four_marks_gis/probe/probe_summary.json').write_text(json.dumps(out,indent=2))
-          PY
-      - name: Commit probe result
+          rm -rf analysis/four_marks_gis/output
+          python -m py_compile analysis/four_marks_gis/run_analysis.py
+          python analysis/four_marks_gis/run_analysis.py 2>&1 | tee analysis/four_marks_gis/run.log
+          cd analysis/four_marks_gis
+          zip -r four_marks_gis_results.zip output run.log
+      - name: Commit analysis outputs
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add analysis/four_marks_gis/probe/probe_summary.json
-          git diff --cached --quiet || git commit -m 'Record EA WCS scaling probe [skip ci]'
+          git add analysis/four_marks_gis/output analysis/four_marks_gis/run.log analysis/four_marks_gis/four_marks_gis_results.zip
+          git diff --cached --quiet || git commit -m 'Add Four Marks GIS terrain results [gis-output]'
           git push
