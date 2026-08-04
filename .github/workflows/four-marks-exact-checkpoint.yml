@@ -1,0 +1,56 @@
+name: Four Marks final one-metre verification
+
+on:
+  push:
+    branches:
+      - gis-four-marks-v2-20260804
+    paths:
+      - '.github/workflows/four-marks-exact-checkpoint.yml'
+      - 'analysis/four_marks_gis/run_exact_checkpoint.py'
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gis-four-marks-v2-20260804
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install GIS dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy pandas requests rasterio scipy pyproj shapely folium matplotlib
+      - name: Verify 48 discoveries and 19 named locations from original one-metre DTM
+        env:
+          GIS_OUTPUT: analysis/four_marks_gis/output_v3
+          GIS_CACHE: /tmp/four_marks_exact_cache
+          GIS_CHECKPOINT: analysis/four_marks_gis/v2_coarse_checkpoint/preliminary_components.csv
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          set -euxo pipefail
+          rm -rf analysis/four_marks_gis/output_v3 analysis/four_marks_gis/run_exact_checkpoint.log analysis/four_marks_gis/four_marks_gis_results_v3.zip
+          # Whitewool benchmark face is constrained to the club's actual 020-100 degree sector.
+          sed -i 's/dist<800/dist<600/' analysis/four_marks_gis/run_analysis.py
+          sed -i 's/dist<(850 if white/dist<(650 if white/' analysis/four_marks_gis/run_analysis.py
+          sed -i 's/np.arange(0,360,5)/np.arange(20,101,5)/' analysis/four_marks_gis/run_analysis.py
+          python -m py_compile analysis/four_marks_gis/run_analysis.py analysis/four_marks_gis/run_exact_checkpoint.py
+          python analysis/four_marks_gis/run_exact_checkpoint.py 2>&1 | tee analysis/four_marks_gis/run_exact_checkpoint.log
+          cd analysis/four_marks_gis
+          zip -r four_marks_gis_results_v3.zip output_v3 run_exact_checkpoint.log
+      - name: Commit completed GIS outputs
+        if: success()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -- analysis/four_marks_gis/run_analysis.py
+          git pull --rebase origin gis-four-marks-v2-20260804
+          git add -f analysis/four_marks_gis/output_v3 analysis/four_marks_gis/run_exact_checkpoint.log analysis/four_marks_gis/four_marks_gis_results_v3.zip
+          git diff --cached --quiet || git commit -m 'Add final checkpoint-based GIS results [gis-output]'
+          git push
