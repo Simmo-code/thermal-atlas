@@ -1,0 +1,54 @@
+name: Four Marks GIS WCS probe
+
+on:
+  push:
+    branches:
+      - gis-four-marks-20260804
+    paths:
+      - '.github/workflows/four-marks-gis-probe.yml'
+      - 'analysis/four_marks_gis/**'
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gis-four-marks-20260804
+      - name: Install GDAL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gdal-bin python3-gdal jq
+      - name: Download Whitewool DTM probe
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p analysis/four_marks_gis/probe
+          URL='https://environment.data.gov.uk/spatialdata/lidar-composite-digital-terrain-model-dtm-1m/wcs?service=WCS&version=2.0.1&request=GetCoverage&coverageId=13787b9a-26a4-4775-8523-806d13af58fc__Lidar_Composite_Elevation_DTM_1m&subset=E(464000,466000)&subset=N(119400,121400)&format=image/tiff'
+          curl -L --fail --retry 4 --retry-all-errors --connect-timeout 30 --max-time 1200 "$URL" -o analysis/four_marks_gis/probe/whitewool_probe.tif
+          gdalinfo -json analysis/four_marks_gis/probe/whitewool_probe.tif > analysis/four_marks_gis/probe/gdalinfo.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          info=json.loads(Path('analysis/four_marks_gis/probe/gdalinfo.json').read_text())
+          out={
+              'size': info.get('size'),
+              'coordinateSystem': info.get('coordinateSystem',{}).get('wkt','')[:300],
+              'geoTransform': info.get('geoTransform'),
+              'cornerCoordinates': info.get('cornerCoordinates'),
+              'file_size_bytes': Path('analysis/four_marks_gis/probe/whitewool_probe.tif').stat().st_size,
+          }
+          Path('analysis/four_marks_gis/probe/probe_summary.json').write_text(json.dumps(out,indent=2))
+          PY
+          rm analysis/four_marks_gis/probe/whitewool_probe.tif
+      - name: Commit probe result
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add analysis/four_marks_gis/probe
+          git diff --cached --quiet || git commit -m 'Record EA WCS probe result [skip ci]'
+          git push
