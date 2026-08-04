@@ -1,0 +1,16 @@
+{
+  "locations_requested": 19,
+  "one_metre_results": 19,
+  "named_locations_passing": 0,
+  "nearby_face_substitutions": 0,
+  "verification_failures": 0,
+  "whitewool_thresholds": {
+    "representative_slope_deg": 11.946382522583008,
+    "minimum_representative_slope_deg": 11.696382522583008,
+    "vertical_relief_m": 55.653743743896484,
+    "minimum_relief_m": 44.52299499511719,
+    "ridge_length_m": 1196.447685956955,
+    "minimum_ridge_length_m": 837.5133801698685,
+    "minimum_face_percentage": 35.0
+  }
+}
