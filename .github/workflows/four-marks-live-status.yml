@@ -1,0 +1,38 @@
+name: Four Marks live status
+
+on:
+  push:
+    branches:
+      - gis-four-marks-v2-20260804
+    paths:
+      - '.github/workflows/four-marks-live-status.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gis-four-marks-v2-20260804
+          fetch-depth: 0
+      - name: Query action status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs?per_page=100" --jq '[.workflow_runs[] | select(.name | contains("Four Marks") or contains("Pidham") or contains("Whitewool")) | {id,name,status,conclusion,head_branch,head_sha,created_at,updated_at,run_number,event,html_url}]' > /tmp/workflow_runs.json
+      - name: Publish to dedicated status branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin gis-four-marks-status
+          git checkout -B gis-four-marks-status origin/gis-four-marks-status
+          mkdir -p analysis/four_marks_gis/status
+          cp /tmp/workflow_runs.json analysis/four_marks_gis/status/live_workflow_runs.json
+          git add analysis/four_marks_gis/status/live_workflow_runs.json
+          git diff --cached --quiet || git commit -m 'Refresh live Four Marks workflow status'
+          git push origin gis-four-marks-status
