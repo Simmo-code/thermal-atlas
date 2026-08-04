@@ -68,7 +68,7 @@ jobs:
               rows.append(row)
           frame=pd.DataFrame(rows).sort_values(['named_location_pass','terrain_score'],ascending=[False,False])
           frame.to_csv(r.OUT/'required_reassessments.csv',index=False)
-          summary={'locations_requested':len(jobs),'one_metre_results':len(results),'named_locations_passing':int(frame['named_location_pass'].sum()),'nearby_face_substitutions':int(((frame['measurement_shift_m']>700)&frame['pass_terrain']).sum()),'verification_failures':int((frame['status']=='Verification failed').sum()),'whitewool_thresholds':{k:benchmark[k] for k in ['representative_slope_deg','minimum_representative_slope_deg','vertical_relief_m','minimum_relief_m','ridge_length_m','minimum_ridge_length_m','minimum_face_percentage']}}
+          summary={'locations_requested':len(jobs),'one_metre_results':len(results),'named_locations_passing':int(frame['named_location_pass'].sum()),'nearby_face_substitutions':int(((frame['measurement_shift_m']>700)&frame['pass_terrain']).sum()),'verification_failures':int((frame['status']=='Verification failed').sum()),'whitewool_thresholds':{k:float(benchmark[k]) for k in ['representative_slope_deg','minimum_representative_slope_deg','vertical_relief_m','minimum_relief_m','ridge_length_m','minimum_ridge_length_m','minimum_face_percentage']}}
           (r.OUT/'summary.json').write_text(json.dumps(summary,indent=2))
           print(summary)
           PY
@@ -76,6 +76,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -- analysis/four_marks_gis/run_analysis.py
           git pull --rebase origin gis-four-marks-v2-20260804
           git add analysis/four_marks_gis/required_reassessments
           git diff --cached --quiet || git commit -m 'Add required named one-metre reassessments [gis-output]'
