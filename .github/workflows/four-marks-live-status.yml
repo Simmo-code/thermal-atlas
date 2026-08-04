@@ -36,3 +36,5 @@ jobs:
           git add analysis/four_marks_gis/status/live_workflow_runs.json
           git diff --cached --quiet || git commit -m 'Refresh live Four Marks workflow status'
           git push origin gis-four-marks-status
+
+# refresh 2
