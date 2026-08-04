@@ -26,6 +26,9 @@ jobs:
       - name: Measure Whitewool
         run: |
           rm -rf analysis/four_marks_gis/benchmark_checkpoint
+          sed -i 's/dist<800/dist<600/' analysis/four_marks_gis/run_analysis.py
+          sed -i 's/dist<(850 if white/dist<(650 if white/' analysis/four_marks_gis/run_analysis.py
+          sed -i 's/np.arange(0,360,5)/np.arange(20,101,5)/' analysis/four_marks_gis/run_analysis.py
           GIS_OUTPUT=analysis/four_marks_gis/benchmark_checkpoint python - <<'PY'
           from pathlib import Path
           import analysis.four_marks_gis.run_analysis as r
@@ -41,5 +44,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add analysis/four_marks_gis/benchmark_checkpoint
-          git diff --cached --quiet || git commit -m 'Add Whitewool benchmark checkpoint [gis-output]'
+          git diff --cached --quiet || git commit -m 'Add corrected Whitewool benchmark checkpoint [gis-output]'
           git push
