@@ -37,6 +37,19 @@ jobs:
           cache-dependency-path: analysis/whitewool_lidar_requirements.txt
       - name: Install terrain-analysis dependencies
         run: python -m pip install -r analysis/whitewool_lidar_requirements.txt
+      - name: Correct raster-row compass offset and syntax-check
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('analysis/whitewool_lidar_scan.py')
+          text = path.read_text()
+          old = 'dest=ndimage.shift(a,(-dr,-dc),order=1,mode="constant",cval=np.nan,prefilter=False)'
+          new = 'dest=ndimage.shift(a,(dr,-dc),order=1,mode="constant",cval=np.nan,prefilter=False)'
+          if old not in text:
+              raise SystemExit('Expected directional-shift line not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          python -m py_compile analysis/whitewool_lidar_scan.py
       - name: Run 30-mile Whitewool-threshold scan
         run: |
           python analysis/whitewool_lidar_scan.py \
