@@ -1,0 +1,52 @@
+name: Pidham one-metre verification smoke test
+
+on:
+  push:
+    branches:
+      - gis-four-marks-v2-20260804
+    paths:
+      - '.github/workflows/four-marks-pidham-smoke-test.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gis-four-marks-v2-20260804
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install numpy pandas requests rasterio scipy pyproj shapely folium matplotlib
+      - name: Verify Pidham
+        run: |
+          sed -i 's/dist<800/dist<600/' analysis/four_marks_gis/run_analysis.py
+          sed -i 's/dist<(850 if white/dist<(650 if white/' analysis/four_marks_gis/run_analysis.py
+          sed -i 's/np.arange(0,360,5)/np.arange(20,101,5)/' analysis/four_marks_gis/run_analysis.py
+          rm -rf analysis/four_marks_gis/pidham_smoke
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          from dataclasses import asdict
+          import analysis.four_marks_gis.run_analysis as r
+          r.OUT=Path('analysis/four_marks_gis/pidham_smoke');r.CACHE=Path('/tmp/pidham_smoke')
+          r.OUT.mkdir(parents=True,exist_ok=True);(r.OUT/'profiles').mkdir(exist_ok=True)
+          b,_,_,_=r.benchmark_whitewool()
+          lat,lon=r.FORCED_WGS['Pidham Hill'];e,n=r.TO_BNG.transform(lon,lat)
+          f=r.exact_assess('Pidham Hill',e,n,b,'Required reassessment')
+          (r.OUT/'pidham.json').write_text(json.dumps(asdict(f),indent=2))
+          print(asdict(f))
+          PY
+      - name: Commit smoke result
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -- analysis/four_marks_gis/run_analysis.py
+          git pull --rebase origin gis-four-marks-v2-20260804
+          git add analysis/four_marks_gis/pidham_smoke
+          git diff --cached --quiet || git commit -m 'Add Pidham one-metre smoke result [gis-output]'
+          git push
