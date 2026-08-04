@@ -1,2 +1,3 @@
-Triggered 2026-08-04 13:51 Europe/London
+Triggered 2026-08-04 15:55 Europe/London
 Criteria: likely 9.5 degrees / 30 m / 400 m / 30 percent; marginal 8 degrees / 25 m / 300 m / 20 percent; thermal trigger 6 degrees / 20 m / 250 m.
+Reason: retry after Environment Agency WCS returned a temporary HTTP 403 during the coarse terrain scan. The resilient runner now throttles requests, uses longer backoff, reduces concurrent downloads and saves partial terrain cache data.
