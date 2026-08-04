@@ -1,0 +1,50 @@
+name: Four Marks compact reassessment report
+
+on:
+  push:
+    branches:
+      - gis-four-marks-v2-20260804
+    paths:
+      - '.github/workflows/four-marks-compact-reassessments.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  compact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gis-four-marks-v2-20260804
+          fetch-depth: 0
+      - name: Build compact CSV and Markdown
+        run: |
+          python - <<'PY'
+          import csv
+          from pathlib import Path
+          src=Path('analysis/four_marks_gis/required_reassessments/required_reassessments.csv')
+          out=Path('analysis/four_marks_gis/required_reassessments')
+          cols=['name','status','latitude','longitude','grid_ref','distance_miles','aspect_deg','aspect_text','representative_slope_deg','median_local_slope_deg','max_robust_slope_deg','vertical_relief_m','vertical_relief_ft','horizontal_run_m','face_width_m','ridge_length_m','percent_face_at_benchmark','whitewool_slope_percent','whitewool_relief_percent','terrain_score','measurement_shift_m','named_location_pass','reason']
+          with src.open(newline='',encoding='utf-8') as f:
+              rows=list(csv.DictReader(f))
+          rows.sort(key=lambda r: float(r.get('terrain_score') or 0),reverse=True)
+          with (out/'required_reassessments_compact.csv').open('w',newline='',encoding='utf-8') as f:
+              w=csv.DictWriter(f,fieldnames=cols);w.writeheader();w.writerows({c:r.get(c,'') for c in cols} for r in rows)
+          lines=['# Required named-location reassessments','','Whitewool pass thresholds: representative sustained slope ≥11.70°, vertical relief ≥44.52 m, continuous ridge ≥837.51 m, and ≥35% of the broader face at the Whitewool representative angle.','', '| Location | Result | Rep. slope | Relief | Ridge | Face at benchmark | Measured reason |','|---|---:|---:|---:|---:|---:|---|']
+          for r in rows:
+              def n(k,d=1,s=''):
+                  try:return f"{float(r[k]):.{d}f}{s}"
+                  except:return '—'
+              lines.append(f"| {r['name']} | {'PASS' if r.get('named_location_pass')=='True' else 'FAIL'} | {n('representative_slope_deg',1,'°')} | {n('vertical_relief_m',1,' m')} | {n('ridge_length_m',0,' m')} | {n('percent_face_at_benchmark',0,'%')} | {r.get('reason','')} |")
+          (out/'required_reassessments_compact.md').write_text('\n'.join(lines),encoding='utf-8')
+          PY
+      - name: Commit compact report
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git pull --rebase origin gis-four-marks-v2-20260804
+          git add analysis/four_marks_gis/required_reassessments/required_reassessments_compact.*
+          git diff --cached --quiet || git commit -m 'Add compact named reassessment report [gis-output]'
+          git push
