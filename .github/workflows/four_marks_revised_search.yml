@@ -1,0 +1,70 @@
+name: Four Marks revised minimum-profile search
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - gis-four-marks-revised-20260804
+    paths:
+      - analysis/four_marks_gis/revised_trigger.txt
+
+permissions:
+  contents: write
+
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: gis-four-marks-revised-20260804
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install GIS dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy pandas requests rasterio scipy pyproj shapely folium matplotlib
+
+      - name: Restore terrain cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/four_marks_gis_cache_revised
+          key: four-marks-revised-terrain-${{ runner.os }}-v1
+
+      - name: Run complete revised search
+        env:
+          GIS_OUTPUT: analysis/four_marks_gis/output_revised
+          GIS_CACHE: /tmp/four_marks_gis_cache_revised
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          rm -rf analysis/four_marks_gis/output_revised
+          python analysis/four_marks_gis/run_revised_search.py
+
+      - name: Package results
+        run: |
+          cd analysis/four_marks_gis
+          zip -qr four_marks_revised_results.zip output_revised
+
+      - name: Upload result artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: four-marks-revised-minimum-profile-results
+          path: |
+            analysis/four_marks_gis/output_revised
+            analysis/four_marks_gis/four_marks_revised_results.zip
+          retention-days: 30
+
+      - name: Commit result files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add analysis/four_marks_gis/output_revised analysis/four_marks_gis/four_marks_revised_results.zip
+          git diff --cached --quiet || git commit -m "Add revised Four Marks minimum-profile search results"
+          git push origin HEAD:gis-four-marks-revised-20260804
