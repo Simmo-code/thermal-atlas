@@ -1,0 +1,51 @@
+name: Four Marks fast survivor review
+
+on:
+  push:
+    branches:
+      - gis-four-marks-v2-20260804
+    paths:
+      - '.github/workflows/four-marks-survivor-review-fast.yml'
+      - 'analysis/four_marks_gis/postprocess_survivors_fast.py'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gis-four-marks-v2-20260804
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install GIS dependencies
+        run: python -m pip install requests shapely pyproj folium
+      - name: Run time-bounded survivor review
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          set -euxo pipefail
+          rm -rf analysis/four_marks_gis/survivor_review_fast
+          python analysis/four_marks_gis/postprocess_survivors_fast.py 2>&1 | tee /tmp/survivor_review_fast.log
+          cp /tmp/survivor_review_fast.log analysis/four_marks_gis/survivor_review_fast/run.log
+          zip -r analysis/four_marks_gis/survivor_review_fast.zip analysis/four_marks_gis/survivor_review_fast
+      - uses: actions/upload-artifact@v4
+        with:
+          name: four-marks-fast-survivor-review
+          path: analysis/four_marks_gis/survivor_review_fast
+          if-no-files-found: error
+          retention-days: 30
+      - name: Commit fast review
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git pull --rebase origin gis-four-marks-v2-20260804
+          git add -f analysis/four_marks_gis/survivor_review_fast analysis/four_marks_gis/survivor_review_fast.zip
+          git diff --cached --quiet || git commit -m 'Add time-bounded survivor review [gis-output]'
+          git push
