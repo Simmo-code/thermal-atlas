@@ -33,10 +33,13 @@ jobs:
           python -m pip install numpy pandas requests rasterio scipy pyproj shapely folium matplotlib
 
       - name: Restore terrain cache
-        uses: actions/cache@v4
+        id: terrain-cache
+        uses: actions/cache/restore@v4
         with:
           path: /tmp/four_marks_gis_cache_revised
-          key: four-marks-revised-terrain-${{ runner.os }}-v1
+          key: four-marks-revised-terrain-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            four-marks-revised-terrain-${{ runner.os }}-
 
       - name: Run complete revised search
         env:
@@ -45,7 +48,14 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}
         run: |
           rm -rf analysis/four_marks_gis/output_revised
-          python analysis/four_marks_gis/run_revised_search.py
+          python analysis/four_marks_gis/run_revised_search_resilient.py
+
+      - name: Save terrain cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/four_marks_gis_cache_revised
+          key: four-marks-revised-terrain-${{ runner.os }}-${{ github.run_id }}
 
       - name: Package results
         run: |
