@@ -1,0 +1,29 @@
+{
+  "search_centre_bng": [
+    466643.45684303704,
+    134657.4891149239
+  ],
+  "search_radius_m": 48280.32,
+  "search_area_sq_km": 7323.01885828484,
+  "coarse_resolution_m": 10,
+  "coarse_tile_count": 138,
+  "raw_sustained_components": 50,
+  "preliminary_terrain_areas_after_dedup": 48,
+  "coarse_candidates_sent_to_one_metre": 48,
+  "required_named_locations_verified": 19,
+  "one_metre_jobs_attempted": 67,
+  "one_metre_jobs_succeeded": 67,
+  "one_metre_jobs_failed": 0,
+  "deduplicated_one_metre_results": 56,
+  "failed_verification_windows": [],
+  "one_metre_verified_total": 56,
+  "genuinely_equal_or_exceed_whitewool": 6,
+  "passed_names": [
+    "Unnamed face near SU 726 254",
+    "Unnamed face near TQ 107 488",
+    "Unnamed face near SU 734 266",
+    "Unnamed face near SU 717 248",
+    "Unnamed face near SU 740 312",
+    "Unnamed face near SU 724 190"
+  ]
+}
