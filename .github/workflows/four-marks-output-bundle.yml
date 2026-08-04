@@ -1,0 +1,39 @@
+name: Four Marks completed output bundle
+
+on:
+  push:
+    branches:
+      - gis-four-marks-v2-20260804
+    paths:
+      - '.github/workflows/four-marks-output-bundle.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gis-four-marks-v2-20260804
+      - name: Confirm completed files
+        run: |
+          set -euxo pipefail
+          test -f analysis/four_marks_gis/output_v3/filtering_summary.json
+          test -f analysis/four_marks_gis/output_v3/interactive_map.html
+          test -f analysis/four_marks_gis/output_v3/four_marks_candidates.kml
+          test -f analysis/four_marks_gis/output_v3/all_measured_candidates.csv
+          test -f analysis/four_marks_gis/output_v3/candidates.geojson
+          test -f analysis/four_marks_gis/four_marks_gis_results_v3.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: four-marks-completed-gis-outputs
+          path: |
+            analysis/four_marks_gis/output_v3
+            analysis/four_marks_gis/four_marks_gis_results_v3.zip
+            analysis/four_marks_gis/required_reassessments/required_reassessments_compact.csv
+            analysis/four_marks_gis/required_reassessments/required_reassessments_compact.md
+          if-no-files-found: error
+          retention-days: 30
