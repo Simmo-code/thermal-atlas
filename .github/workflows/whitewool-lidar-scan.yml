@@ -8,13 +8,20 @@ on:
       - analysis/whitewool_lidar_scan.py
       - analysis/whitewool_lidar_requirements.txt
       - .github/workflows/whitewool-lidar-scan.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - analysis/whitewool_lidar_scan.py
+      - analysis/whitewool_lidar_requirements.txt
+      - .github/workflows/whitewool-lidar-scan.yml
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: whitewool-lidar-scan
+  group: whitewool-lidar-scan-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
