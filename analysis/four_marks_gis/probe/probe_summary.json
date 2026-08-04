@@ -1,0 +1,38 @@
+{
+  "size": [
+    2000,
+    2000
+  ],
+  "coordinateSystem": "PROJCRS[\"OSGB36 / British National Grid\",\n    BASEGEOGCRS[\"OSGB36\",\n        DATUM[\"Ordnance Survey of Great Britain 1936\",\n            ELLIPSOID[\"Airy 1830\",6377563.396,299.3249646,\n                LENGTHUNIT[\"metre\",1]]],\n        PRIMEM[\"Greenwich\",0,\n            ANGLEUNIT[\"degree\",0.01745329251994",
+  "geoTransform": [
+    464000.0,
+    1.0,
+    0.0,
+    121400.0,
+    0.0,
+    -1.0
+  ],
+  "cornerCoordinates": {
+    "upperLeft": [
+      464000.0,
+      121400.0
+    ],
+    "lowerLeft": [
+      464000.0,
+      119400.0
+    ],
+    "lowerRight": [
+      466000.0,
+      119400.0
+    ],
+    "upperRight": [
+      466000.0,
+      121400.0
+    ],
+    "center": [
+      465000.0,
+      120400.0
+    ]
+  },
+  "file_size_bytes": 16777763
+}
