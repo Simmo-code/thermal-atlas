@@ -1,3 +1,3 @@
-Triggered 2026-08-05 14:54 Europe/London
+Triggered 2026-08-05 19:24 Europe/London
 Criteria: likely 9.5 degrees / 30 m / 400 m / 30 percent; marginal 8 degrees / 25 m / 300 m / 20 percent; thermal trigger 6 degrees / 20 m / 250 m.
-Reason: terrain-only retry with all automated OSM/Overpass and aviation proximity checks removed. Obstacles, land cover, protected land, access, ownership, aviation charts, NOTAMs, aerodromes and local procedures will be checked manually for the final shortlist. WCS throttling, long backoff, partial terrain-cache saving, corrected exact-verification argument order and 1.2 km candidate clustering remain enabled.
+Reason: retry after fixing final GeoJSON/JSON output serialization for NumPy float32 and array values. Terrain analysis had completed and failed only while writing candidates.geojson. Automated OSM/Overpass and aviation checks remain disabled for manual review. WCS throttling, cache reuse, corrected exact-verification argument order and 1.2 km candidate clustering remain enabled.
