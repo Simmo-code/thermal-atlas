@@ -73,8 +73,7 @@ s=s.replace("with cf.ThreadPoolExecutor(max_workers=4) as ex:", "with cf.ThreadP
 # Make the reduced exact workload explicit in the log.
 s=s.replace("faces=[]\n    with cf.ThreadPoolExecutor(max_workers=3) as ex:", "log(f'Exact verification jobs after 1.2 km clustering: {len(jobs)}')\n    faces=[]\n    with cf.ThreadPoolExecutor(max_workers=3) as ex:")
 
-# Aviation proximity checks are deliberately omitted. The user will check current
-# charts, NOTAMs, aerodromes and local procedures manually after terrain screening.
+# Remove aviation calculations. These will be checked manually after terrain ranking.
 aviation_start="    ds=[]\n    for nm,(lat,lon) in AERODROMES.items():\n"
 aviation_end="    near=[]\n"
 aviation_i=s.find(aviation_start)
@@ -82,8 +81,30 @@ aviation_j=s.find(aviation_end,aviation_i)
 if aviation_i < 0 or aviation_j < 0:
     raise SystemExit("Aviation screening block not found")
 s=s[:aviation_i]+"    face.airspace_observation='Not automatically checked; manually review current aviation charts, NOTAMs, aerodromes and local procedures.'\n"+s[aviation_j:]
-s=s.replace("OSM/aviation proximity screens", "OSM proximity screens")
-s=s.replace("OpenStreetMap screening is a current obstacle pointer, not a substitute for official protected-site records, current aviation charts/NOTAMs, landowner contact, a field inspection or a formal club site assessment.", "OpenStreetMap screening is a current obstacle pointer, not a substitute for official protected-site records, landowner contact, a field inspection or a formal club site assessment. Aviation constraints were not checked automatically and must be reviewed manually using current charts, NOTAMs, aerodrome information and local procedures.")
+
+# Remove all per-candidate OpenStreetMap/Overpass calls. Terrain results are produced
+# first; obstacles, land cover, protected land and aviation will be checked manually
+# only for the final shortlist.
+old_screen="""    for i,f in enumerate(final,1):
+      if f.pass_terrain or f.source=='Required reassessment':osm_check(f)
+      if i%8==0:log(f'OSM/aviation proximity screens {i}/{len(final)}')
+"""
+new_screen="""    log(f'Skipping automated OSM and aviation checks for {len(final)} terrain candidates')
+    for f in final:
+      f.landcover_observation='Not automatically checked; inspect aerial imagery and site conditions manually.'
+      f.obstacle_observation='Not automatically checked; inspect buildings, power lines, roads, railways, trees and fences manually.'
+      f.protected_observation='Not automatically checked; confirm protected-land constraints using official records.'
+      f.airspace_observation='Not automatically checked; manually review current aviation charts, NOTAMs, aerodromes and local procedures.'
+      f.existing_site_conflict='Not automatically checked.'
+      if f.pass_terrain:
+        f.launch_observation='Terrain geometry appears potentially suitable; surface, fences, rotor, access and ownership require field inspection.'
+        f.landing_observation='Terrain analysis only; actual emergency landing suitability requires aerial imagery and a site visit.'
+"""
+if old_screen not in s:
+    raise SystemExit("OSM screening loop not found")
+s=s.replace(old_screen,new_screen)
+
+s=s.replace("OpenStreetMap screening is a current obstacle pointer, not a substitute for official protected-site records, current aviation charts/NOTAMs, landowner contact, a field inspection or a formal club site assessment.", "Automated OSM and aviation screening were deliberately omitted. Obstacles, land cover, protected land, access, ownership, current aviation charts, NOTAMs, aerodromes and local procedures must be checked manually for shortlisted terrain candidates.")
 '''
 
 wrapper = wrapper.replace(marker, injection + "\n" + marker)
