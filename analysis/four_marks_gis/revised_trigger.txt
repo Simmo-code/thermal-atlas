@@ -1,3 +1,3 @@
-Triggered 2026-08-04 20:37 Europe/London
+Triggered 2026-08-05 07:19 Europe/London
 Criteria: likely 9.5 degrees / 30 m / 400 m / 30 percent; marginal 8 degrees / 25 m / 300 m / 20 percent; thermal trigger 6 degrees / 20 m / 250 m.
-Reason: retry after fixing the exact-verification argument order bug that caused "string indices must be integers, not 'str'". Coarse candidates are now clustered at 1.2 km because each exact window already covers a 3 km square, reducing 1,609 heavily overlapping exact jobs to a manageable number while preserving coverage. WCS throttling, long backoff and partial terrain-cache saving remain enabled.
+Reason: retry with automated aviation proximity screening removed. Aviation charts, NOTAMs, aerodromes and local procedures will be checked manually. OSM obstacle, land-cover, protected-site and recognised-site proximity checks remain enabled, together with WCS throttling, long backoff, partial terrain-cache saving, corrected exact-verification argument order and 1.2 km candidate clustering.
