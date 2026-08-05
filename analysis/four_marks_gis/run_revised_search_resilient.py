@@ -25,6 +25,25 @@ def wcs_throttle(min_gap=5.0):
 if gate_marker not in s:
     raise SystemExit("WCS gate insertion point not found")
 s=s.replace(gate_marker,gate_code)
+
+# Make every JSON output accept NumPy scalar and array values produced by raster analysis.
+json_marker="_WCS_LAST=[0.0]\n"
+json_code="""_WCS_LAST=[0.0]
+_ORIGINAL_JSON_DEFAULT=json.JSONEncoder.default
+
+def _numpy_json_default(self,obj):
+    if isinstance(obj,np.generic):
+        return obj.item()
+    if isinstance(obj,np.ndarray):
+        return obj.tolist()
+    return _ORIGINAL_JSON_DEFAULT(self,obj)
+
+json.JSONEncoder.default=_numpy_json_default
+"""
+if json_marker not in s:
+    raise SystemExit("JSON serializer insertion point not found")
+s=s.replace(json_marker,json_code,1)
+
 s=s.replace("def download(bounds,scale,path,retries=5):", "def download(bounds,scale,path,retries=15):")
 request_marker="            with requests.get(wcs_url(bounds,scale),headers=headers,stream=True,timeout=(60,1800)) as r:\n"
 request_code="""            wcs_throttle()
