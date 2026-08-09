@@ -39,12 +39,24 @@ def ideal_band(v, lo, sweet_lo, sweet_hi, hi):
 
 
 def aspect_diff(a, b=TARGET_ASPECT):
-    return abs((float(a)-b+180.0)%360.0-180.0)
+    try:
+        a=float(a)
+    except (TypeError, ValueError):
+        return float('inf')
+    if not np.isfinite(a):
+        return float('inf')
+    return abs((a-b+180.0)%360.0-180.0)
 
 
 def compass16(d):
     names=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW']
-    return names[int(((float(d)%360)+11.25)//22.5)%16]
+    try:
+        d=float(d)
+    except (TypeError, ValueError):
+        return 'Unknown'
+    if not np.isfinite(d):
+        return 'Unknown'
+    return names[int(((d%360)+11.25)//22.5)%16]
 
 
 def score_row(r, white):
@@ -107,8 +119,8 @@ def score_row(r, white):
         0.05*white_sim
     )
 
-    # Hard ideal geometry. These are intentionally demanding, but the output
-    # always fills to 100 with the best near-matches if fewer than 100 qualify.
+    # Hard ideal geometry. Missing aspect is deliberately not accepted as Ideal
+    # or Strong; it can still remain in lower fallback tiers for manual review.
     ideal = (
         slope >= 9.5 and relief >= 35 and
         max(ridge8, width if np.isfinite(width) else 0) >= 400 and
@@ -137,6 +149,8 @@ def score_row(r, white):
 
 def deduplicate(df, distance_m=600.0, aspect_tol=30.0):
     # Greedy best-first clustering: nearby candidates on the same face become one hill.
+    # Candidates with unknown aspect are retained rather than crashing or being
+    # incorrectly merged into a neighbouring face.
     keep=[]
     for idx,row in df.iterrows():
         e=float(row.easting); n=float(row.northing); a=float(row.aspect_deg)
@@ -144,9 +158,11 @@ def deduplicate(df, distance_m=600.0, aspect_tol=30.0):
         for k in keep:
             q=df.loc[k]
             if math.hypot(e-float(q.easting), n-float(q.northing)) < distance_m:
-                da=abs((a-float(q.aspect_deg)+180)%360-180)
-                if da <= aspect_tol:
-                    duplicate=True; break
+                qa=float(q.aspect_deg)
+                if np.isfinite(a) and np.isfinite(qa):
+                    da=abs((a-qa+180)%360-180)
+                    if da <= aspect_tol:
+                        duplicate=True; break
         if not duplicate: keep.append(idx)
     return df.loc[keep].copy()
 
@@ -170,10 +186,11 @@ def make_map(top):
 
     marker_meta=[]
     for _,r in top.iterrows():
-        rank=int(r.rank);lat=float(r.latitude);lon=float(r.longitude)
+        rank=int(r['rank']);lat=float(r.latitude);lon=float(r.longitude)
         earth=f'https://earth.google.com/web/@{lat:.7f},{lon:.7f},500a,1200d,35y,0h,0t,0r'
+        aspect_text=f'{r.aspect_deg:.0f}°' if np.isfinite(float(r.aspect_deg)) else 'unknown'
         popup=f'''<div style="font-family:Arial;min-width:280px"><h4 style="margin:0 0 7px">#{rank} — {r.selection_tier}</h4>
-        <b>{r['name']}</b><br><b>Score:</b> {r.paragliding_score:.1f}/100<br><b>Facing:</b> {r.facing} ({r.aspect_deg:.0f}°)<br>
+        <b>{r['name']}</b><br><b>Score:</b> {r.paragliding_score:.1f}/100<br><b>Facing:</b> {r.facing} ({aspect_text})<br>
         <b>Sustained slope:</b> {r.representative_slope_deg:.1f}°<br><b>Relief:</b> {r.vertical_relief_m:.0f} m / {r.vertical_relief_ft:.0f} ft<br>
         <b>Ridge ≥8°:</b> {r.ridge_8deg_m:.0f} m<br><b>Face ≥8°:</b> {r.percent_face_8deg:.0f}%<br>
         <b>Whitewool similarity:</b> {r.whitewool_similarity_pct:.0f}%<br><b>Grid:</b> {r.grid_ref}<br><br>
