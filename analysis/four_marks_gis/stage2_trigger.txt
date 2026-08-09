@@ -1,0 +1,2 @@
+Triggered 2026-08-09 Europe/London
+Purpose: rank the completed 1 m terrain candidates as paragliding sites, deduplicate nearby same-face candidates, select ideal sites first, then progressively relax thresholds until a ranked top 100 is returned.
