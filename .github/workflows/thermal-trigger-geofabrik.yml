@@ -1,0 +1,58 @@
+name: Thermal trigger Geofabrik analysis
+on:
+  push:
+    branches: ["analysis/thermal-trigger-study"]
+    paths:
+      - analysis/run_geofabrik_trigger.py
+      - analysis/thermal_trigger_matched.csv
+      - .github/workflows/thermal-trigger-geofabrik.yml
+permissions:
+  contents: write
+jobs:
+  geofabrik:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: analysis/thermal-trigger-study
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq osmium-tool
+          pip install pandas shapely pyproj scipy
+      - name: Download and filter county OSM extracts
+        run: |
+          mkdir -p /tmp/osm
+          for c in wiltshire gloucestershire worcestershire hampshire west-sussex east-sussex oxfordshire buckinghamshire berkshire; do
+            echo "Downloading $c"
+            wget -q --show-progress -O /tmp/osm/$c.pbf https://download.geofabrik.de/europe/united-kingdom/england/$c-latest.osm.pbf
+            osmium tags-filter /tmp/osm/$c.pbf \
+              w/highway=motorway w/highway=motorway_link w/highway=trunk w/highway=trunk_link \
+              w/highway=primary w/highway=primary_link w/highway=secondary w/highway=secondary_link \
+              w/highway=tertiary w/highway=tertiary_link w/highway=unclassified w/highway=residential \
+              w/highway=living_street w/highway=service \
+              w/landuse=farmland w/landuse=meadow w/landuse=grass w/landuse=orchard w/landuse=vineyard \
+              w/landuse=residential w/landuse=industrial w/landuse=commercial w/landuse=retail w/landuse=forest \
+              w/natural=wood \
+              r/landuse=farmland r/landuse=meadow r/landuse=grass r/landuse=orchard r/landuse=vineyard \
+              r/landuse=residential r/landuse=industrial r/landuse=commercial r/landuse=retail r/landuse=forest \
+              r/natural=wood n/place=city n/place=town n/place=village \
+              -o /tmp/osm/$c-subset.pbf --overwrite
+            osmium export /tmp/osm/$c-subset.pbf -o /tmp/osm/$c-subset.geojson --overwrite
+            rm /tmp/osm/$c.pbf /tmp/osm/$c-subset.pbf
+          done
+      - name: Run matched case-control analysis
+        run: python analysis/run_geofabrik_trigger.py
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add analysis/thermal_trigger_geofabrik_metrics.csv analysis/thermal_trigger_geofabrik_summary.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Add Geofabrik thermal trigger results"
+            git push origin HEAD:analysis/thermal-trigger-study
+          fi
