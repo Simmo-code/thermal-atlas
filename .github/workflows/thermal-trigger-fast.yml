@@ -1,0 +1,31 @@
+name: Thermal trigger fast validation
+on:
+  push:
+    branches: ["analysis/thermal-trigger-study"]
+    paths:
+      - analysis/run_thermal_trigger_gis_fast.py
+      - .github/workflows/thermal-trigger-fast.yml
+permissions:
+  contents: write
+jobs:
+  analyse-fast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: analysis/thermal-trigger-study
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: pip install pandas requests shapely pyproj scipy
+      - run: python analysis/run_thermal_trigger_gis_fast.py
+      - name: Commit fast results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add analysis/thermal_trigger_fast_metrics.csv analysis/thermal_trigger_fast_summary.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Add fast thermal trigger GIS results"
+            git push origin HEAD:analysis/thermal-trigger-study
+          fi
