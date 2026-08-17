@@ -1,8 +1,9 @@
-import json, glob, math
+import json, glob
 from collections import defaultdict
 import pandas as pd
-from shapely.geometry import shape, Point, LineString, MultiLineString, Polygon, MultiPolygon
+from shapely.geometry import shape, Point
 from shapely.ops import transform
+from shapely.strtree import STRtree
 from pyproj import Transformer
 from scipy.stats import fisher_exact, mannwhitneyu
 
@@ -38,9 +39,8 @@ for fn in glob.glob('/tmp/osm/*-subset.geojson'):
             if lu in URBAN: urban.append(gp)
             if lu=='forest' or nat=='wood': woods.append(gp)
         if props.get('place') in {'city','town','village'} and g.geom_type=='Point':places.append(P(g))
-print('features roads',len(roads),'agri',len(ag),'urban',len(urban),'woods',len(woods),'places',len(places))
+print('features roads',len(roads),'agri',len(ag),'urban',len(urban),'woods',len(woods),'places',len(places),flush=True)
 
-# Junctions from shared road vertices. Named/ref roads use signature; unnamed nodes require >=3 ways.
 node_fids=defaultdict(set); node_sigs=defaultdict(set); node_major=defaultdict(set); node_xy={}
 for g,p,fid in roads:
     sig=p.get('ref') or p.get('name') or None
@@ -58,23 +58,50 @@ for pt,ismajor in roundabouts:
     junc.append(pt)
     if ismajor:mjunc.append(pt)
 majorroads=[g for g,p,f in roads if p.get('highway') in MAJOR]; allroads=[g for g,p,f in roads]
+print('junctions',len(junc),'major junctions',len(mjunc),flush=True)
 
-def md(pt,gs):return float(min((pt.distance(g) for g in gs),default=99999))
-def pinfo(pt,ps):
-    d=99999.; inside=False; big=False
-    for p in ps:
-        dd=pt.distance(p.boundary) if pt.within(p) else pt.distance(p)
-        if dd<d:d=float(dd)
-        if pt.within(p):inside=True
-        if p.area>=100000 and pt.distance(p)<=300:big=True
+def tree_nearest_distance(pt, geoms, tree):
+    if not geoms:return 99999.0
+    q=tree.nearest(pt)
+    try:g=geoms[int(q)]
+    except Exception:g=q
+    return float(pt.distance(g))
+
+def poly_indexes(polys):
+    if not polys:return None,None,[]
+    edges=[p.boundary for p in polys]
+    return STRtree(polys),STRtree(edges),edges
+
+def pinfo(pt,polys,ptree,etree,edges):
+    if not polys:return 99999.0,False,False
+    q=etree.nearest(pt)
+    try:edge=edges[int(q)]
+    except Exception:edge=q
+    d=float(pt.distance(edge))
+    inside=False
+    for ix in ptree.query(pt):
+        try:p=polys[int(ix)]
+        except Exception:p=ix
+        if pt.within(p) or pt.touches(p):inside=True;break
+    big=False
+    for ix in ptree.query(pt.buffer(300)):
+        try:p=polys[int(ix)]
+        except Exception:p=ix
+        if p.area>=100000 and pt.distance(p)<=300:big=True;break
     return d,inside,big
 
+roadtree=STRtree(allroads) if allroads else None; majortree=STRtree(majorroads) if majorroads else None
+jtree=STRtree(junc) if junc else None; mjtree=STRtree(mjunc) if mjunc else None; placetree=STRtree(places) if places else None
+agt,aget,agedges=poly_indexes(ag); urt,uret,uredges=poly_indexes(urban); wot,woet,woedges=poly_indexes(woods)
+
+def md(pt,gs,t):return tree_nearest_distance(pt,gs,t) if t is not None else 99999.0
 pts=pd.read_csv(PTS); rows=[]
-for _,r in pts.iterrows():
-    pt=P(Point(float(r.lon),float(r.lat))); da,ai,big=pinfo(pt,ag);du,ui,_=pinfo(pt,urban);dw,wi,_=pinfo(pt,woods)
-    x=dict(r);x.update(d_junction_m=md(pt,junc),d_major_junction_m=md(pt,mjunc),d_any_road_m=md(pt,allroads),d_major_road_m=md(pt,majorroads),d_agri_edge_m=da,d_urban_edge_m=du,d_wood_edge_m=dw,d_place_m=md(pt,places),agri_inside=int(ai),urban_inside=int(ui),big_agri_near300=int(big))
+for n,(_,r) in enumerate(pts.iterrows(),1):
+    pt=P(Point(float(r.lon),float(r.lat))); da,ai,big=pinfo(pt,ag,agt,aget,agedges);du,ui,_=pinfo(pt,urban,urt,uret,uredges);dw,wi,_=pinfo(pt,woods,wot,woet,woedges)
+    x=dict(r);x.update(d_junction_m=md(pt,junc,jtree),d_major_junction_m=md(pt,mjunc,mjtree),d_any_road_m=md(pt,allroads,roadtree),d_major_road_m=md(pt,majorroads,majortree),d_agri_edge_m=da,d_urban_edge_m=du,d_wood_edge_m=dw,d_place_m=md(pt,places,placetree),agri_inside=int(ai),urban_inside=int(ui),big_agri_near300=int(big))
     x.update(junction_300=int(x['d_junction_m']<=300),junction_500=int(x['d_junction_m']<=500),major_junction_500=int(x['d_major_junction_m']<=500),major_road_300=int(x['d_major_road_m']<=300),any_road_150=int(x['d_any_road_m']<=150),agri_edge_300=int(da<=300),wood_edge_300=int(dw<=300),urban_near500=int(ui or du<=500),place_near2000=int(x['d_place_m']<=2000),road_agri_boundary=int(x['d_any_road_m']<=150 and da<=300),surface_boundary_300=int(min(da,du,dw)<=300))
     rows.append(x)
+    if n%40==0:print('measured',n,'/',len(pts),flush=True)
 r=pd.DataFrame(rows); r.to_csv(OUT,index=False)
 
 def binstat(df,c):
