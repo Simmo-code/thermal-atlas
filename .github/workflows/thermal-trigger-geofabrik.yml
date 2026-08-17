@@ -4,6 +4,7 @@ on:
     branches: ["analysis/thermal-trigger-study"]
     paths:
       - analysis/run_geofabrik_trigger.py
+      - analysis/make_trigger_corridor.py
       - analysis/thermal_trigger_matched.csv
       - .github/workflows/thermal-trigger-geofabrik.yml
 permissions:
@@ -24,13 +25,17 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq osmium-tool
           pip install pandas shapely pyproj scipy
-      - name: Download and filter county OSM extracts
+      - name: Build 5 km flight corridor
         run: |
           mkdir -p /tmp/osm
+          python analysis/make_trigger_corridor.py /tmp/osm/flight-corridor.geojson
+      - name: Download, clip and filter county OSM extracts
+        run: |
           for c in wiltshire gloucestershire worcestershire hampshire west-sussex east-sussex oxfordshire buckinghamshire berkshire; do
             echo "Downloading $c"
             wget -q --show-progress -O /tmp/osm/$c.pbf https://download.geofabrik.de/europe/united-kingdom/england/$c-latest.osm.pbf
-            osmium tags-filter /tmp/osm/$c.pbf \
+            osmium extract -p /tmp/osm/flight-corridor.geojson /tmp/osm/$c.pbf -o /tmp/osm/$c-crop.pbf --overwrite --strategy=complete_ways
+            osmium tags-filter /tmp/osm/$c-crop.pbf \
               w/highway=motorway w/highway=motorway_link w/highway=trunk w/highway=trunk_link \
               w/highway=primary w/highway=primary_link w/highway=secondary w/highway=secondary_link \
               w/highway=tertiary w/highway=tertiary_link w/highway=unclassified w/highway=residential \
@@ -43,7 +48,7 @@ jobs:
               r/natural=wood n/place=city n/place=town n/place=village \
               -o /tmp/osm/$c-subset.pbf --overwrite
             osmium export /tmp/osm/$c-subset.pbf -o /tmp/osm/$c-subset.geojson --overwrite
-            rm /tmp/osm/$c.pbf /tmp/osm/$c-subset.pbf
+            rm /tmp/osm/$c.pbf /tmp/osm/$c-crop.pbf /tmp/osm/$c-subset.pbf
           done
       - name: Run matched case-control analysis
         run: python analysis/run_geofabrik_trigger.py
