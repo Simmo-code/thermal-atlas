@@ -1,0 +1,1698 @@
+{
+  "all": {
+    "n_thermal": 44,
+    "n_control": 132,
+    "binary": {
+      "junction_300": {
+        "thermal_pct": 29.5,
+        "control_pct": 28.0,
+        "odds_ratio": 1.09,
+        "p": 0.8488,
+        "counts": [
+          13,
+          31,
+          37,
+          95
+        ]
+      },
+      "junction_500": {
+        "thermal_pct": 45.5,
+        "control_pct": 45.5,
+        "odds_ratio": 1.0,
+        "p": 1.0,
+        "counts": [
+          20,
+          24,
+          60,
+          72
+        ]
+      },
+      "major_junction_500": {
+        "thermal_pct": 31.8,
+        "control_pct": 40.2,
+        "odds_ratio": 0.71,
+        "p": 0.3728,
+        "counts": [
+          14,
+          30,
+          53,
+          79
+        ]
+      },
+      "major_road_300": {
+        "thermal_pct": 34.1,
+        "control_pct": 41.7,
+        "odds_ratio": 0.73,
+        "p": 0.4772,
+        "counts": [
+          15,
+          29,
+          55,
+          77
+        ]
+      },
+      "any_road_150": {
+        "thermal_pct": 40.9,
+        "control_pct": 42.4,
+        "odds_ratio": 0.95,
+        "p": 1.0,
+        "counts": [
+          18,
+          26,
+          56,
+          76
+        ]
+      },
+      "agri_inside": {
+        "thermal_pct": 47.7,
+        "control_pct": 28.8,
+        "odds_ratio": 2.25,
+        "p": 0.027,
+        "counts": [
+          21,
+          23,
+          38,
+          94
+        ]
+      },
+      "agri_edge_300": {
+        "thermal_pct": 79.5,
+        "control_pct": 68.9,
+        "odds_ratio": 1.69,
+        "p": 0.2465,
+        "counts": [
+          35,
+          9,
+          91,
+          41
+        ]
+      },
+      "big_agri_near300": {
+        "thermal_pct": 68.2,
+        "control_pct": 47.7,
+        "odds_ratio": 2.3,
+        "p": 0.0233,
+        "counts": [
+          30,
+          14,
+          63,
+          69
+        ]
+      },
+      "wood_edge_300": {
+        "thermal_pct": 75.0,
+        "control_pct": 81.8,
+        "odds_ratio": 0.66,
+        "p": 0.3834,
+        "counts": [
+          33,
+          11,
+          108,
+          24
+        ]
+      },
+      "urban_inside": {
+        "thermal_pct": 4.5,
+        "control_pct": 6.8,
+        "odds_ratio": 0.76,
+        "p": 0.7332,
+        "counts": [
+          2,
+          42,
+          9,
+          123
+        ]
+      },
+      "urban_near500": {
+        "thermal_pct": 40.9,
+        "control_pct": 50.0,
+        "odds_ratio": 0.7,
+        "p": 0.3837,
+        "counts": [
+          18,
+          26,
+          66,
+          66
+        ]
+      },
+      "place_near2000": {
+        "thermal_pct": 77.3,
+        "control_pct": 77.3,
+        "odds_ratio": 0.98,
+        "p": 1.0,
+        "counts": [
+          34,
+          10,
+          102,
+          30
+        ]
+      },
+      "road_agri_boundary": {
+        "thermal_pct": 31.8,
+        "control_pct": 29.5,
+        "odds_ratio": 1.13,
+        "p": 0.8499,
+        "counts": [
+          14,
+          30,
+          39,
+          93
+        ]
+      },
+      "surface_boundary_300": {
+        "thermal_pct": 93.2,
+        "control_pct": 95.5,
+        "odds_ratio": 0.61,
+        "p": 0.6926,
+        "counts": [
+          41,
+          3,
+          126,
+          6
+        ]
+      }
+    },
+    "continuous": {
+      "d_junction_m": {
+        "thermal_median_m": 587.8,
+        "control_median_m": 523.8,
+        "p": 0.6982
+      },
+      "d_major_junction_m": {
+        "thermal_median_m": 672.9,
+        "control_median_m": 622.4,
+        "p": 0.3143
+      },
+      "d_any_road_m": {
+        "thermal_median_m": 195.7,
+        "control_median_m": 178.9,
+        "p": 0.3771
+      },
+      "d_major_road_m": {
+        "thermal_median_m": 516.0,
+        "control_median_m": 386.1,
+        "p": 0.1164
+      },
+      "d_agri_edge_m": {
+        "thermal_median_m": 115.3,
+        "control_median_m": 150.1,
+        "p": 0.6023
+      },
+      "d_wood_edge_m": {
+        "thermal_median_m": 161.7,
+        "control_median_m": 125.8,
+        "p": 0.2841
+      },
+      "d_urban_edge_m": {
+        "thermal_median_m": 604.0,
+        "control_median_m": 502.8,
+        "p": 0.4074
+      },
+      "d_place_m": {
+        "thermal_median_m": 1408.1,
+        "control_median_m": 1454.5,
+        "p": 0.7365
+      }
+    }
+  },
+  "low_entry": {
+    "n_thermal": 15,
+    "n_control": 45,
+    "binary": {
+      "junction_300": {
+        "thermal_pct": 13.3,
+        "control_pct": 22.2,
+        "odds_ratio": 0.63,
+        "p": 0.7119,
+        "counts": [
+          2,
+          13,
+          10,
+          35
+        ]
+      },
+      "junction_500": {
+        "thermal_pct": 46.7,
+        "control_pct": 37.8,
+        "odds_ratio": 1.44,
+        "p": 0.5587,
+        "counts": [
+          7,
+          8,
+          17,
+          28
+        ]
+      },
+      "major_junction_500": {
+        "thermal_pct": 26.7,
+        "control_pct": 35.6,
+        "odds_ratio": 0.7,
+        "p": 0.7529,
+        "counts": [
+          4,
+          11,
+          16,
+          29
+        ]
+      },
+      "major_road_300": {
+        "thermal_pct": 26.7,
+        "control_pct": 31.1,
+        "odds_ratio": 0.85,
+        "p": 1.0,
+        "counts": [
+          4,
+          11,
+          14,
+          31
+        ]
+      },
+      "any_road_150": {
+        "thermal_pct": 26.7,
+        "control_pct": 26.7,
+        "odds_ratio": 1.05,
+        "p": 1.0,
+        "counts": [
+          4,
+          11,
+          12,
+          33
+        ]
+      },
+      "agri_inside": {
+        "thermal_pct": 40.0,
+        "control_pct": 24.4,
+        "odds_ratio": 2.05,
+        "p": 0.3235,
+        "counts": [
+          6,
+          9,
+          11,
+          34
+        ]
+      },
+      "agri_edge_300": {
+        "thermal_pct": 86.7,
+        "control_pct": 64.4,
+        "odds_ratio": 3.02,
+        "p": 0.1915,
+        "counts": [
+          13,
+          2,
+          29,
+          16
+        ]
+      },
+      "big_agri_near300": {
+        "thermal_pct": 73.3,
+        "control_pct": 44.4,
+        "odds_ratio": 3.18,
+        "p": 0.0747,
+        "counts": [
+          11,
+          4,
+          20,
+          25
+        ]
+      },
+      "wood_edge_300": {
+        "thermal_pct": 66.7,
+        "control_pct": 77.8,
+        "odds_ratio": 0.56,
+        "p": 0.4935,
+        "counts": [
+          10,
+          5,
+          35,
+          10
+        ]
+      },
+      "urban_inside": {
+        "thermal_pct": 0.0,
+        "control_pct": 4.4,
+        "odds_ratio": 0.56,
+        "p": 1.0,
+        "counts": [
+          0,
+          15,
+          2,
+          43
+        ]
+      },
+      "urban_near500": {
+        "thermal_pct": 40.0,
+        "control_pct": 46.7,
+        "odds_ratio": 0.78,
+        "p": 0.7682,
+        "counts": [
+          6,
+          9,
+          21,
+          24
+        ]
+      },
+      "place_near2000": {
+        "thermal_pct": 80.0,
+        "control_pct": 91.1,
+        "odds_ratio": 0.39,
+        "p": 0.3515,
+        "counts": [
+          12,
+          3,
+          41,
+          4
+        ]
+      },
+      "road_agri_boundary": {
+        "thermal_pct": 20.0,
+        "control_pct": 15.6,
+        "odds_ratio": 1.44,
+        "p": 0.6998,
+        "counts": [
+          3,
+          12,
+          7,
+          38
+        ]
+      },
+      "surface_boundary_300": {
+        "thermal_pct": 93.3,
+        "control_pct": 93.3,
+        "odds_ratio": 0.8,
+        "p": 1.0,
+        "counts": [
+          14,
+          1,
+          42,
+          3
+        ]
+      }
+    },
+    "continuous": {
+      "d_junction_m": {
+        "thermal_median_m": 639.6,
+        "control_median_m": 530.4,
+        "p": 0.2821
+      },
+      "d_major_junction_m": {
+        "thermal_median_m": 1079.6,
+        "control_median_m": 675.7,
+        "p": 0.2255
+      },
+      "d_any_road_m": {
+        "thermal_median_m": 285.9,
+        "control_median_m": 289.5,
+        "p": 0.2821
+      },
+      "d_major_road_m": {
+        "thermal_median_m": 1038.2,
+        "control_median_m": 452.7,
+        "p": 0.1086
+      },
+      "d_agri_edge_m": {
+        "thermal_median_m": 112.1,
+        "control_median_m": 176.2,
+        "p": 0.2746
+      },
+      "d_wood_edge_m": {
+        "thermal_median_m": 251.2,
+        "control_median_m": 128.7,
+        "p": 0.3057
+      },
+      "d_urban_edge_m": {
+        "thermal_median_m": 851.2,
+        "control_median_m": 604.7,
+        "p": 0.4629
+      },
+      "d_place_m": {
+        "thermal_median_m": 1478.6,
+        "control_median_m": 1366.9,
+        "p": 0.5055
+      }
+    }
+  },
+  "by_flight": {
+    "0": {
+      "n_thermal": 13,
+      "n_control": 39,
+      "binary": {
+        "junction_300": {
+          "thermal_pct": 46.2,
+          "control_pct": 35.9,
+          "odds_ratio": 1.52,
+          "p": 0.5292,
+          "counts": [
+            6,
+            7,
+            14,
+            25
+          ]
+        },
+        "junction_500": {
+          "thermal_pct": 46.2,
+          "control_pct": 56.4,
+          "odds_ratio": 0.67,
+          "p": 0.541,
+          "counts": [
+            6,
+            7,
+            22,
+            17
+          ]
+        },
+        "major_junction_500": {
+          "thermal_pct": 30.8,
+          "control_pct": 53.8,
+          "odds_ratio": 0.41,
+          "p": 0.205,
+          "counts": [
+            4,
+            9,
+            21,
+            18
+          ]
+        },
+        "major_road_300": {
+          "thermal_pct": 38.5,
+          "control_pct": 51.3,
+          "odds_ratio": 0.62,
+          "p": 0.5283,
+          "counts": [
+            5,
+            8,
+            20,
+            19
+          ]
+        },
+        "any_road_150": {
+          "thermal_pct": 46.2,
+          "control_pct": 43.6,
+          "odds_ratio": 1.11,
+          "p": 1.0,
+          "counts": [
+            6,
+            7,
+            17,
+            22
+          ]
+        },
+        "agri_inside": {
+          "thermal_pct": 46.2,
+          "control_pct": 20.5,
+          "odds_ratio": 3.21,
+          "p": 0.0857,
+          "counts": [
+            6,
+            7,
+            8,
+            31
+          ]
+        },
+        "agri_edge_300": {
+          "thermal_pct": 76.9,
+          "control_pct": 59.0,
+          "odds_ratio": 2.11,
+          "p": 0.3278,
+          "counts": [
+            10,
+            3,
+            23,
+            16
+          ]
+        },
+        "big_agri_near300": {
+          "thermal_pct": 61.5,
+          "control_pct": 33.3,
+          "odds_ratio": 3.03,
+          "p": 0.1048,
+          "counts": [
+            8,
+            5,
+            13,
+            26
+          ]
+        },
+        "wood_edge_300": {
+          "thermal_pct": 76.9,
+          "control_pct": 69.2,
+          "odds_ratio": 1.36,
+          "p": 0.7326,
+          "counts": [
+            10,
+            3,
+            27,
+            12
+          ]
+        },
+        "urban_inside": {
+          "thermal_pct": 15.4,
+          "control_pct": 15.4,
+          "odds_ratio": 1.12,
+          "p": 1.0,
+          "counts": [
+            2,
+            11,
+            6,
+            33
+          ]
+        },
+        "urban_near500": {
+          "thermal_pct": 46.2,
+          "control_pct": 59.0,
+          "odds_ratio": 0.61,
+          "p": 0.5244,
+          "counts": [
+            6,
+            7,
+            23,
+            16
+          ]
+        },
+        "place_near2000": {
+          "thermal_pct": 84.6,
+          "control_pct": 76.9,
+          "odds_ratio": 1.43,
+          "p": 0.7087,
+          "counts": [
+            11,
+            2,
+            30,
+            9
+          ]
+        },
+        "road_agri_boundary": {
+          "thermal_pct": 30.8,
+          "control_pct": 30.8,
+          "odds_ratio": 1.04,
+          "p": 1.0,
+          "counts": [
+            4,
+            9,
+            12,
+            27
+          ]
+        },
+        "surface_boundary_300": {
+          "thermal_pct": 92.3,
+          "control_pct": 89.7,
+          "odds_ratio": 1.06,
+          "p": 1.0,
+          "counts": [
+            12,
+            1,
+            35,
+            4
+          ]
+        }
+      },
+      "continuous": {
+        "d_junction_m": {
+          "thermal_median_m": 581.2,
+          "control_median_m": 413.1,
+          "p": 0.8162
+        },
+        "d_major_junction_m": {
+          "thermal_median_m": 542.2,
+          "control_median_m": 466.4,
+          "p": 0.0909
+        },
+        "d_any_road_m": {
+          "thermal_median_m": 150.5,
+          "control_median_m": 182.4,
+          "p": 0.8824
+        },
+        "d_major_road_m": {
+          "thermal_median_m": 505.7,
+          "control_median_m": 276.0,
+          "p": 0.3979
+        },
+        "d_agri_edge_m": {
+          "thermal_median_m": 118.5,
+          "control_median_m": 151.5,
+          "p": 0.5683
+        },
+        "d_wood_edge_m": {
+          "thermal_median_m": 152.1,
+          "control_median_m": 145.0,
+          "p": 0.9831
+        },
+        "d_urban_edge_m": {
+          "thermal_median_m": 507.2,
+          "control_median_m": 359.1,
+          "p": 0.612
+        },
+        "d_place_m": {
+          "thermal_median_m": 1250.5,
+          "control_median_m": 1151.5,
+          "p": 0.8326
+        }
+      }
+    },
+    "1": {
+      "n_thermal": 2,
+      "n_control": 6,
+      "binary": {
+        "junction_300": {
+          "thermal_pct": 50.0,
+          "control_pct": 16.7,
+          "odds_ratio": 3.67,
+          "p": 0.4643,
+          "counts": [
+            1,
+            1,
+            1,
+            5
+          ]
+        },
+        "junction_500": {
+          "thermal_pct": 100.0,
+          "control_pct": 50.0,
+          "odds_ratio": 5.0,
+          "p": 0.4643,
+          "counts": [
+            2,
+            0,
+            3,
+            3
+          ]
+        },
+        "major_junction_500": {
+          "thermal_pct": 50.0,
+          "control_pct": 0.0,
+          "odds_ratio": 13.0,
+          "p": 0.25,
+          "counts": [
+            1,
+            1,
+            0,
+            6
+          ]
+        },
+        "major_road_300": {
+          "thermal_pct": 50.0,
+          "control_pct": 0.0,
+          "odds_ratio": 13.0,
+          "p": 0.25,
+          "counts": [
+            1,
+            1,
+            0,
+            6
+          ]
+        },
+        "any_road_150": {
+          "thermal_pct": 50.0,
+          "control_pct": 50.0,
+          "odds_ratio": 1.0,
+          "p": 1.0,
+          "counts": [
+            1,
+            1,
+            3,
+            3
+          ]
+        },
+        "agri_inside": {
+          "thermal_pct": 100.0,
+          "control_pct": 16.7,
+          "odds_ratio": 18.33,
+          "p": 0.1071,
+          "counts": [
+            2,
+            0,
+            1,
+            5
+          ]
+        },
+        "agri_edge_300": {
+          "thermal_pct": 100.0,
+          "control_pct": 83.3,
+          "odds_ratio": 1.36,
+          "p": 1.0,
+          "counts": [
+            2,
+            0,
+            5,
+            1
+          ]
+        },
+        "big_agri_near300": {
+          "thermal_pct": 100.0,
+          "control_pct": 83.3,
+          "odds_ratio": 1.36,
+          "p": 1.0,
+          "counts": [
+            2,
+            0,
+            5,
+            1
+          ]
+        },
+        "wood_edge_300": {
+          "thermal_pct": 100.0,
+          "control_pct": 100.0,
+          "odds_ratio": 0.38,
+          "p": 1.0,
+          "counts": [
+            2,
+            0,
+            6,
+            0
+          ]
+        },
+        "urban_inside": {
+          "thermal_pct": 0.0,
+          "control_pct": 0.0,
+          "odds_ratio": 2.6,
+          "p": 1.0,
+          "counts": [
+            0,
+            2,
+            0,
+            6
+          ]
+        },
+        "urban_near500": {
+          "thermal_pct": 50.0,
+          "control_pct": 33.3,
+          "odds_ratio": 1.8,
+          "p": 1.0,
+          "counts": [
+            1,
+            1,
+            2,
+            4
+          ]
+        },
+        "place_near2000": {
+          "thermal_pct": 100.0,
+          "control_pct": 100.0,
+          "odds_ratio": 0.38,
+          "p": 1.0,
+          "counts": [
+            2,
+            0,
+            6,
+            0
+          ]
+        },
+        "road_agri_boundary": {
+          "thermal_pct": 50.0,
+          "control_pct": 33.3,
+          "odds_ratio": 1.8,
+          "p": 1.0,
+          "counts": [
+            1,
+            1,
+            2,
+            4
+          ]
+        },
+        "surface_boundary_300": {
+          "thermal_pct": 100.0,
+          "control_pct": 100.0,
+          "odds_ratio": 0.38,
+          "p": 1.0,
+          "counts": [
+            2,
+            0,
+            6,
+            0
+          ]
+        }
+      },
+      "continuous": {
+        "d_junction_m": {
+          "thermal_median_m": 280.7,
+          "control_median_m": 650.0,
+          "p": 0.2857
+        },
+        "d_major_junction_m": {
+          "thermal_median_m": 682.4,
+          "control_median_m": 2276.6,
+          "p": 0.1429
+        },
+        "d_any_road_m": {
+          "thermal_median_m": 137.0,
+          "control_median_m": 287.4,
+          "p": 0.6429
+        },
+        "d_major_road_m": {
+          "thermal_median_m": 307.1,
+          "control_median_m": 1312.5,
+          "p": 0.0714
+        },
+        "d_agri_edge_m": {
+          "thermal_median_m": 60.7,
+          "control_median_m": 164.3,
+          "p": 0.6429
+        },
+        "d_wood_edge_m": {
+          "thermal_median_m": 241.6,
+          "control_median_m": 124.2,
+          "p": 0.0714
+        },
+        "d_urban_edge_m": {
+          "thermal_median_m": 458.7,
+          "control_median_m": 890.3,
+          "p": 0.4286
+        },
+        "d_place_m": {
+          "thermal_median_m": 1523.3,
+          "control_median_m": 1588.9,
+          "p": 0.8571
+        }
+      }
+    },
+    "2": {
+      "n_thermal": 1,
+      "n_control": 3,
+      "binary": {
+        "junction_300": {
+          "thermal_pct": 0.0,
+          "control_pct": 0.0,
+          "odds_ratio": 2.33,
+          "p": 1.0,
+          "counts": [
+            0,
+            1,
+            0,
+            3
+          ]
+        },
+        "junction_500": {
+          "thermal_pct": 0.0,
+          "control_pct": 0.0,
+          "odds_ratio": 2.33,
+          "p": 1.0,
+          "counts": [
+            0,
+            1,
+            0,
+            3
+          ]
+        },
+        "major_junction_500": {
+          "thermal_pct": 0.0,
+          "control_pct": 0.0,
+          "odds_ratio": 2.33,
+          "p": 1.0,
+          "counts": [
+            0,
+            1,
+            0,
+            3
+          ]
+        },
+        "major_road_300": {
+          "thermal_pct": 0.0,
+          "control_pct": 0.0,
+          "odds_ratio": 2.33,
+          "p": 1.0,
+          "counts": [
+            0,
+            1,
+            0,
+            3
+          ]
+        },
+        "any_road_150": {
+          "thermal_pct": 0.0,
+          "control_pct": 0.0,
+          "odds_ratio": 2.33,
+          "p": 1.0,
+          "counts": [
+            0,
+            1,
+            0,
+            3
+          ]
+        },
+        "agri_inside": {
+          "thermal_pct": 0.0,
+          "control_pct": 0.0,
+          "odds_ratio": 2.33,
+          "p": 1.0,
+          "counts": [
+            0,
+            1,
+            0,
+            3
+          ]
+        },
+        "agri_edge_300": {
+          "thermal_pct": 100.0,
+          "control_pct": 100.0,
+          "odds_ratio": 0.43,
+          "p": 1.0,
+          "counts": [
+            1,
+            0,
+            3,
+            0
+          ]
+        },
+        "big_agri_near300": {
+          "thermal_pct": 100.0,
+          "control_pct": 33.3,
+          "odds_ratio": 5.0,
+          "p": 1.0,
+          "counts": [
+            1,
+            0,
+            1,
+            2
+          ]
+        },
+        "wood_edge_300": {
+          "thermal_pct": 100.0,
+          "control_pct": 100.0,
+          "odds_ratio": 0.43,
+          "p": 1.0,
+          "counts": [
+            1,
+            0,
+            3,
+            0
+          ]
+        },
+        "urban_inside": {
+          "thermal_pct": 0.0,
+          "control_pct": 0.0,
+          "odds_ratio": 2.33,
+          "p": 1.0,
+          "counts": [
+            0,
+            1,
+            0,
+            3
+          ]
+        },
+        "urban_near500": {
+          "thermal_pct": 0.0,
+          "control_pct": 0.0,
+          "odds_ratio": 2.33,
+          "p": 1.0,
+          "counts": [
+            0,
+            1,
+            0,
+            3
+          ]
+        },
+        "place_near2000": {
+          "thermal_pct": 100.0,
+          "control_pct": 100.0,
+          "odds_ratio": 0.43,
+          "p": 1.0,
+          "counts": [
+            1,
+            0,
+            3,
+            0
+          ]
+        },
+        "road_agri_boundary": {
+          "thermal_pct": 0.0,
+          "control_pct": 0.0,
+          "odds_ratio": 2.33,
+          "p": 1.0,
+          "counts": [
+            0,
+            1,
+            0,
+            3
+          ]
+        },
+        "surface_boundary_300": {
+          "thermal_pct": 100.0,
+          "control_pct": 100.0,
+          "odds_ratio": 0.43,
+          "p": 1.0,
+          "counts": [
+            1,
+            0,
+            3,
+            0
+          ]
+        }
+      },
+      "continuous": {
+        "d_junction_m": {
+          "thermal_median_m": 639.6,
+          "control_median_m": 605.6,
+          "p": 1.0
+        },
+        "d_major_junction_m": {
+          "thermal_median_m": 567.7,
+          "control_median_m": 632.3,
+          "p": 1.0
+        },
+        "d_any_road_m": {
+          "thermal_median_m": 402.3,
+          "control_median_m": 386.4,
+          "p": 1.0
+        },
+        "d_major_road_m": {
+          "thermal_median_m": 566.3,
+          "control_median_m": 524.9,
+          "p": 1.0
+        },
+        "d_agri_edge_m": {
+          "thermal_median_m": 183.8,
+          "control_median_m": 150.7,
+          "p": 0.5
+        },
+        "d_wood_edge_m": {
+          "thermal_median_m": 18.3,
+          "control_median_m": 48.5,
+          "p": 1.0
+        },
+        "d_urban_edge_m": {
+          "thermal_median_m": 886.7,
+          "control_median_m": 1211.7,
+          "p": 0.5
+        },
+        "d_place_m": {
+          "thermal_median_m": 1487.4,
+          "control_median_m": 1634.6,
+          "p": 1.0
+        }
+      }
+    },
+    "3": {
+      "n_thermal": 16,
+      "n_control": 48,
+      "binary": {
+        "junction_300": {
+          "thermal_pct": 18.8,
+          "control_pct": 16.7,
+          "odds_ratio": 1.24,
+          "p": 1.0,
+          "counts": [
+            3,
+            13,
+            8,
+            40
+          ]
+        },
+        "junction_500": {
+          "thermal_pct": 37.5,
+          "control_pct": 29.2,
+          "odds_ratio": 1.47,
+          "p": 0.5474,
+          "counts": [
+            6,
+            10,
+            14,
+            34
+          ]
+        },
+        "major_junction_500": {
+          "thermal_pct": 25.0,
+          "control_pct": 27.1,
+          "odds_ratio": 0.95,
+          "p": 1.0,
+          "counts": [
+            4,
+            12,
+            13,
+            35
+          ]
+        },
+        "major_road_300": {
+          "thermal_pct": 18.8,
+          "control_pct": 35.4,
+          "odds_ratio": 0.47,
+          "p": 0.3506,
+          "counts": [
+            3,
+            13,
+            17,
+            31
+          ]
+        },
+        "any_road_150": {
+          "thermal_pct": 37.5,
+          "control_pct": 29.2,
+          "odds_ratio": 1.47,
+          "p": 0.5474,
+          "counts": [
+            6,
+            10,
+            14,
+            34
+          ]
+        },
+        "agri_inside": {
+          "thermal_pct": 50.0,
+          "control_pct": 52.1,
+          "odds_ratio": 0.92,
+          "p": 1.0,
+          "counts": [
+            8,
+            8,
+            25,
+            23
+          ]
+        },
+        "agri_edge_300": {
+          "thermal_pct": 87.5,
+          "control_pct": 79.2,
+          "odds_ratio": 1.58,
+          "p": 0.714,
+          "counts": [
+            14,
+            2,
+            38,
+            10
+          ]
+        },
+        "big_agri_near300": {
+          "thermal_pct": 75.0,
+          "control_pct": 56.2,
+          "odds_ratio": 2.17,
+          "p": 0.2425,
+          "counts": [
+            12,
+            4,
+            27,
+            21
+          ]
+        },
+        "wood_edge_300": {
+          "thermal_pct": 87.5,
+          "control_pct": 93.8,
+          "odds_ratio": 0.45,
+          "p": 0.5917,
+          "counts": [
+            14,
+            2,
+            45,
+            3
+          ]
+        },
+        "urban_inside": {
+          "thermal_pct": 0.0,
+          "control_pct": 0.0,
+          "odds_ratio": 2.94,
+          "p": 1.0,
+          "counts": [
+            0,
+            16,
+            0,
+            48
+          ]
+        },
+        "urban_near500": {
+          "thermal_pct": 37.5,
+          "control_pct": 39.6,
+          "odds_ratio": 0.94,
+          "p": 1.0,
+          "counts": [
+            6,
+            10,
+            19,
+            29
+          ]
+        },
+        "place_near2000": {
+          "thermal_pct": 75.0,
+          "control_pct": 62.5,
+          "odds_ratio": 1.68,
+          "p": 0.5445,
+          "counts": [
+            12,
+            4,
+            30,
+            18
+          ]
+        },
+        "road_agri_boundary": {
+          "thermal_pct": 37.5,
+          "control_pct": 22.9,
+          "odds_ratio": 2.02,
+          "p": 0.329,
+          "counts": [
+            6,
+            10,
+            11,
+            37
+          ]
+        },
+        "surface_boundary_300": {
+          "thermal_pct": 100.0,
+          "control_pct": 97.9,
+          "odds_ratio": 1.04,
+          "p": 1.0,
+          "counts": [
+            16,
+            0,
+            47,
+            1
+          ]
+        }
+      },
+      "continuous": {
+        "d_junction_m": {
+          "thermal_median_m": 855.4,
+          "control_median_m": 734.2,
+          "p": 0.6812
+        },
+        "d_major_junction_m": {
+          "thermal_median_m": 1090.6,
+          "control_median_m": 930.1,
+          "p": 0.2744
+        },
+        "d_any_road_m": {
+          "thermal_median_m": 241.3,
+          "control_median_m": 256.9,
+          "p": 0.6253
+        },
+        "d_major_road_m": {
+          "thermal_median_m": 934.8,
+          "control_median_m": 396.0,
+          "p": 0.0078
+        },
+        "d_agri_edge_m": {
+          "thermal_median_m": 81.7,
+          "control_median_m": 80.8,
+          "p": 0.8585
+        },
+        "d_wood_edge_m": {
+          "thermal_median_m": 76.8,
+          "control_median_m": 82.4,
+          "p": 0.6812
+        },
+        "d_urban_edge_m": {
+          "thermal_median_m": 859.2,
+          "control_median_m": 688.5,
+          "p": 0.8585
+        },
+        "d_place_m": {
+          "thermal_median_m": 1442.9,
+          "control_median_m": 1742.6,
+          "p": 0.112
+        }
+      }
+    },
+    "4": {
+      "n_thermal": 12,
+      "n_control": 36,
+      "binary": {
+        "junction_300": {
+          "thermal_pct": 25.0,
+          "control_pct": 38.9,
+          "odds_ratio": 0.57,
+          "p": 0.4969,
+          "counts": [
+            3,
+            9,
+            14,
+            22
+          ]
+        },
+        "junction_500": {
+          "thermal_pct": 50.0,
+          "control_pct": 58.3,
+          "odds_ratio": 0.72,
+          "p": 0.7406,
+          "counts": [
+            6,
+            6,
+            21,
+            15
+          ]
+        },
+        "major_junction_500": {
+          "thermal_pct": 41.7,
+          "control_pct": 52.8,
+          "odds_ratio": 0.66,
+          "p": 0.74,
+          "counts": [
+            5,
+            7,
+            19,
+            17
+          ]
+        },
+        "major_road_300": {
+          "thermal_pct": 50.0,
+          "control_pct": 50.0,
+          "odds_ratio": 1.0,
+          "p": 1.0,
+          "counts": [
+            6,
+            6,
+            18,
+            18
+          ]
+        },
+        "any_road_150": {
+          "thermal_pct": 41.7,
+          "control_pct": 61.1,
+          "odds_ratio": 0.47,
+          "p": 0.3193,
+          "counts": [
+            5,
+            7,
+            22,
+            14
+          ]
+        },
+        "agri_inside": {
+          "thermal_pct": 41.7,
+          "control_pct": 11.1,
+          "odds_ratio": 5.3,
+          "p": 0.0321,
+          "counts": [
+            5,
+            7,
+            4,
+            32
+          ]
+        },
+        "agri_edge_300": {
+          "thermal_pct": 66.7,
+          "control_pct": 61.1,
+          "odds_ratio": 1.22,
+          "p": 1.0,
+          "counts": [
+            8,
+            4,
+            22,
+            14
+          ]
+        },
+        "big_agri_near300": {
+          "thermal_pct": 58.3,
+          "control_pct": 47.2,
+          "odds_ratio": 1.52,
+          "p": 0.74,
+          "counts": [
+            7,
+            5,
+            17,
+            19
+          ]
+        },
+        "wood_edge_300": {
+          "thermal_pct": 50.0,
+          "control_pct": 75.0,
+          "odds_ratio": 0.35,
+          "p": 0.1524,
+          "counts": [
+            6,
+            6,
+            27,
+            9
+          ]
+        },
+        "urban_inside": {
+          "thermal_pct": 0.0,
+          "control_pct": 8.3,
+          "odds_ratio": 0.38,
+          "p": 0.5629,
+          "counts": [
+            0,
+            12,
+            3,
+            33
+          ]
+        },
+        "urban_near500": {
+          "thermal_pct": 41.7,
+          "control_pct": 61.1,
+          "odds_ratio": 0.47,
+          "p": 0.3193,
+          "counts": [
+            5,
+            7,
+            22,
+            14
+          ]
+        },
+        "place_near2000": {
+          "thermal_pct": 66.7,
+          "control_pct": 91.7,
+          "odds_ratio": 0.2,
+          "p": 0.0552,
+          "counts": [
+            8,
+            4,
+            33,
+            3
+          ]
+        },
+        "road_agri_boundary": {
+          "thermal_pct": 25.0,
+          "control_pct": 38.9,
+          "odds_ratio": 0.57,
+          "p": 0.4969,
+          "counts": [
+            3,
+            9,
+            14,
+            22
+          ]
+        },
+        "surface_boundary_300": {
+          "thermal_pct": 83.3,
+          "control_pct": 97.2,
+          "odds_ratio": 0.18,
+          "p": 0.1501,
+          "counts": [
+            10,
+            2,
+            35,
+            1
+          ]
+        }
+      },
+      "continuous": {
+        "d_junction_m": {
+          "thermal_median_m": 485.8,
+          "control_median_m": 388.7,
+          "p": 0.5281
+        },
+        "d_major_junction_m": {
+          "thermal_median_m": 629.7,
+          "control_median_m": 477.5,
+          "p": 0.8958
+        },
+        "d_any_road_m": {
+          "thermal_median_m": 222.3,
+          "control_median_m": 135.5,
+          "p": 0.1246
+        },
+        "d_major_road_m": {
+          "thermal_median_m": 284.8,
+          "control_median_m": 306.0,
+          "p": 0.7842
+        },
+        "d_agri_edge_m": {
+          "thermal_median_m": 199.5,
+          "control_median_m": 235.4,
+          "p": 0.6424
+        },
+        "d_wood_edge_m": {
+          "thermal_median_m": 294.8,
+          "control_median_m": 184.1,
+          "p": 0.4251
+        },
+        "d_urban_edge_m": {
+          "thermal_median_m": 544.4,
+          "control_median_m": 260.1,
+          "p": 0.0553
+        },
+        "d_place_m": {
+          "thermal_median_m": 1339.3,
+          "control_median_m": 1173.5,
+          "p": 0.398
+        }
+      }
+    }
+  },
+  "mere_thermals": [
+    {
+      "e": 1,
+      "lat": 51.10878,
+      "lon": -2.27165,
+      "alt": 304.0,
+      "low": 1,
+      "d_junction_m": 1644.2,
+      "d_major_junction_m": 1079.6,
+      "d_any_road_m": 1019.3,
+      "d_major_road_m": 1044.2,
+      "d_agri_edge_m": 172.1,
+      "d_wood_edge_m": 441.3,
+      "d_urban_edge_m": 583.9,
+      "d_place_m": 2162.7
+    },
+    {
+      "e": 2,
+      "lat": 51.14672,
+      "lon": -2.24895,
+      "alt": 1126.0,
+      "low": 0,
+      "d_junction_m": 979.0,
+      "d_major_junction_m": 1504.8,
+      "d_any_road_m": 552.4,
+      "d_major_road_m": 552.4,
+      "d_agri_edge_m": 207.4,
+      "d_wood_edge_m": 121.1,
+      "d_urban_edge_m": 840.7,
+      "d_place_m": 2352.6
+    },
+    {
+      "e": 3,
+      "lat": 51.201,
+      "lon": -2.24015,
+      "alt": 751.0,
+      "low": 0,
+      "d_junction_m": 109.8,
+      "d_major_junction_m": 172.8,
+      "d_any_road_m": 46.9,
+      "d_major_road_m": 46.9,
+      "d_agri_edge_m": 39.5,
+      "d_wood_edge_m": 57.9,
+      "d_urban_edge_m": 410.0,
+      "d_place_m": 1578.0
+    },
+    {
+      "e": 4,
+      "lat": 51.29655,
+      "lon": -2.19145,
+      "alt": 443.0,
+      "low": 1,
+      "d_junction_m": 247.6,
+      "d_major_junction_m": 247.6,
+      "d_any_road_m": 194.7,
+      "d_major_road_m": 247.6,
+      "d_agri_edge_m": 78.4,
+      "d_wood_edge_m": 378.9,
+      "d_urban_edge_m": 197.3,
+      "d_place_m": 348.5
+    },
+    {
+      "e": 5,
+      "lat": 51.36103,
+      "lon": -2.17123,
+      "alt": 1222.0,
+      "low": 0,
+      "d_junction_m": 402.9,
+      "d_major_junction_m": 143.8,
+      "d_any_road_m": 136.6,
+      "d_major_road_m": 136.6,
+      "d_agri_edge_m": 31.5,
+      "d_wood_edge_m": 527.2,
+      "d_urban_edge_m": 627.1,
+      "d_place_m": 1232.2
+    },
+    {
+      "e": 6,
+      "lat": 51.4465,
+      "lon": -2.16063,
+      "alt": 978.0,
+      "low": 0,
+      "d_junction_m": 124.9,
+      "d_major_junction_m": 124.9,
+      "d_any_road_m": 33.5,
+      "d_major_road_m": 124.3,
+      "d_agri_edge_m": 461.2,
+      "d_wood_edge_m": 150.1,
+      "d_urban_edge_m": 746.4,
+      "d_place_m": 2350.3
+    },
+    {
+      "e": 7,
+      "lat": 51.5441,
+      "lon": -2.11773,
+      "alt": 731.0,
+      "low": 0,
+      "d_junction_m": 607.9,
+      "d_major_junction_m": 596.4,
+      "d_any_road_m": 284.5,
+      "d_major_road_m": 322.0,
+      "d_agri_edge_m": 318.7,
+      "d_wood_edge_m": 314.4,
+      "d_urban_edge_m": 505.0,
+      "d_place_m": 1399.5
+    },
+    {
+      "e": 8,
+      "lat": 51.61993,
+      "lon": -2.12382,
+      "alt": 379.0,
+      "low": 1,
+      "d_junction_m": 308.1,
+      "d_major_junction_m": 308.1,
+      "d_any_road_m": 144.0,
+      "d_major_road_m": 144.0,
+      "d_agri_edge_m": 807.7,
+      "d_wood_edge_m": 338.1,
+      "d_urban_edge_m": 381.9,
+      "d_place_m": 907.3
+    },
+    {
+      "e": 9,
+      "lat": 51.65263,
+      "lon": -2.1194,
+      "alt": 1029.0,
+      "low": 0,
+      "d_junction_m": 898.4,
+      "d_major_junction_m": 682.9,
+      "d_any_road_m": 251.8,
+      "d_major_road_m": 682.7,
+      "d_agri_edge_m": 245.1,
+      "d_wood_edge_m": 275.2,
+      "d_urban_edge_m": 687.8,
+      "d_place_m": 3083.9
+    },
+    {
+      "e": 10,
+      "lat": 51.75023,
+      "lon": -2.09445,
+      "alt": 1042.0,
+      "low": 0,
+      "d_junction_m": 627.2,
+      "d_major_junction_m": 2695.9,
+      "d_any_road_m": 349.9,
+      "d_major_road_m": 2695.9,
+      "d_agri_edge_m": 1501.3,
+      "d_wood_edge_m": 44.6,
+      "d_urban_edge_m": 732.1,
+      "d_place_m": 1279.1
+    },
+    {
+      "e": 11,
+      "lat": 51.84632,
+      "lon": -2.06398,
+      "alt": 1096.0,
+      "low": 0,
+      "d_junction_m": 543.1,
+      "d_major_junction_m": 1122.7,
+      "d_any_road_m": 75.1,
+      "d_major_road_m": 75.1,
+      "d_agri_edge_m": 48.4,
+      "d_wood_edge_m": 74.6,
+      "d_urban_edge_m": 203.1,
+      "d_place_m": 656.5
+    },
+    {
+      "e": 12,
+      "lat": 51.93367,
+      "lon": -2.05193,
+      "alt": 1336.0,
+      "low": 0,
+      "d_junction_m": 428.5,
+      "d_major_junction_m": 662.9,
+      "d_any_road_m": 250.0,
+      "d_major_road_m": 428.5,
+      "d_agri_edge_m": 191.7,
+      "d_wood_edge_m": 349.6,
+      "d_urban_edge_m": 285.3,
+      "d_place_m": 786.6
+    }
+  ]
+}
