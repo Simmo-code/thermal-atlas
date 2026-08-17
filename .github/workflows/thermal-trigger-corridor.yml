@@ -1,0 +1,31 @@
+name: Thermal trigger corridor analysis
+on:
+  push:
+    branches: ["analysis/thermal-trigger-study"]
+    paths:
+      - analysis/run_thermal_trigger_corridor.py
+      - .github/workflows/thermal-trigger-corridor.yml
+permissions:
+  contents: write
+jobs:
+  corridor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: analysis/thermal-trigger-study
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: pip install pandas requests shapely pyproj scipy
+      - run: python analysis/run_thermal_trigger_corridor.py
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add analysis/thermal_trigger_corridor_metrics.csv analysis/thermal_trigger_corridor_summary.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Add corridor thermal trigger results"
+            git push origin HEAD:analysis/thermal-trigger-study
+          fi
